@@ -365,7 +365,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
             <MapEditor
               map={map}
               editableLayer={layers.hopitaux}
-              apiBaseUrl="http://127.0.0.1:8000/api/hopitaux/"
+              apiBaseUrl="${API}/api/hopitaux/"
             />
 
             <RegionChart

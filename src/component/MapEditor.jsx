@@ -9,7 +9,7 @@ import GeoJSON from "ol/format/GeoJSON";
 export default function MapEditor({
   map,
   editableLayer,          // VectorLayer (ta couche postgis)
-  apiBaseUrl = "http://127.0.0.1:8000/api/hopitaux/",
+  apiBaseUrl = "${API}/api/hopitaux/",
 }) {
   const [mode, setMode] = useState("none"); // none | draw | modify
   const [selectedId, setSelectedId] = useState(null);

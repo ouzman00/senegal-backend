@@ -9,11 +9,11 @@ function App() {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://127.0.0.1:8000/api/hopitaux/").then((res) => {
+      fetch("${API}/api/hopitaux/").then((res) => {
         if (!res.ok) throw new Error(`Hopitaux HTTP ${res.status}`);
         return res.json();
       }),
-      fetch("http://127.0.0.1:8000/api/ecoles/").then((res) => {
+      fetch("${API}/api/ecoles/").then((res) => {
         if (!res.ok) throw new Error(`Ecoles HTTP ${res.status}`);
         return res.json();
       }),
