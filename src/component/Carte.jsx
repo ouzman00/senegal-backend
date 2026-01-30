@@ -29,9 +29,13 @@ const API_BASE_URL = (
 
 /* =======================
    IMPORTANT (Vite)
-   Place tes GeoJSON ici:
+   Mets tes fichiers GeoJSON dans:
    public/donnees_shp/regions.geojson
    public/donnees_shp/communes.geojson
+
+   ⚠️ Recommandé: renommer sans accents:
+   - Régions.geojson -> regions.geojson
+   - Communes.geojson -> communes.geojson
 ======================= */
 
 export default function Carte({ hopitauxData, ecolesData }) {
@@ -54,7 +58,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
     ecoles: false,
   });
 
-  // éviter de capturer un ancien état dans l'init map
+  // Pour éviter de “capturer” un vieux état dans l’init de la map
   const visibleLayersRef = useRef(visibleLayers);
   useEffect(() => {
     visibleLayersRef.current = visibleLayers;
@@ -69,7 +73,8 @@ export default function Carte({ hopitauxData, ecolesData }) {
     () => [
       {
         id: "Regions",
-        url: "/donnees_shp/regions.geojson", // ✅ sans accent / sans majuscule
+        // ✅ chemin Vercel-friendly (fichier dans /public)
+        url: "/donnees_shp/Régions.geojson",
         color: "#1E0F1C",
         width: 3,
         fill: "rgba(255,0,0,0)",
@@ -77,7 +82,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
       },
       {
         id: "Communes",
-        url: "/donnees_shp/communes.geojson", // ✅ sans accent / sans majuscule
+        url: "/donnees_shp/Communes.geojson",
         color: "#A7001E",
         width: 1,
         fill: "rgba(255,0,0,0)",
@@ -105,7 +110,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // debug prod
+    // (Optionnel) aide debug: vérifier la variable en prod
     // eslint-disable-next-line no-console
     console.log("API BASE URL =", import.meta.env.VITE_API_BASE_URL);
 
@@ -143,12 +148,12 @@ export default function Carte({ hopitauxData, ecolesData }) {
 
     const createdLayers = {};
 
-    // Couches GeoJSON statiques
+    // Charge uniquement les couches GeoJSON statiques (Regions/Communes)
     layerConfigs
       .filter((c) => c.url)
       .forEach((config) => {
         const source = new VectorSource({
-          url: config.url,
+          url: config.url, // ✅ servie par Vercel si le fichier est dans /public
           format: new GeoJSON(),
         });
 
@@ -172,7 +177,6 @@ export default function Carte({ hopitauxData, ecolesData }) {
         mapInstance.addLayer(layer);
       });
 
-    // Click selection
     mapInstance.on("singleclick", (evt) => {
       let found = null;
 
@@ -304,6 +308,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
             </label>
           ))}
 
+          {/* Petit indicateur utile en prod */}
           <div className="mt-3 text-xs text-gray-500 break-words">
             API: {API_BASE_URL || "(non défini en prod)"}
           </div>
@@ -324,6 +329,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
             <MapEditor
               map={map}
               editableLayer={layers.hopitaux}
+              // ✅ endpoint complet, stable
               apiBaseUrl={`${API_BASE_URL}/api/hopitaux/`}
             />
           )}
@@ -334,3 +340,5 @@ export default function Carte({ hopitauxData, ecolesData }) {
     </div>
   );
 }
+
+
