@@ -7,6 +7,23 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # =========================================================
+# GDAL / GEOS (Windows / OSGeo4W)
+# IMPORTANT: must be set BEFORE GeoDjango loads
+# =========================================================
+if os.name == "nt":
+    # OSGeo4W root
+    os.environ.setdefault("OSGEO4W_ROOT", r"C:\OSGeo4W")
+    # Data folders (useful for some operations)
+    os.environ.setdefault("GDAL_DATA", r"C:\OSGeo4W\share\gdal")
+    os.environ.setdefault("PROJ_LIB", r"C:\OSGeo4W\share\proj")
+    # Make sure DLLs are discoverable
+    os.environ["PATH"] = r"C:\OSGeo4W\bin;" + os.environ.get("PATH", "")
+
+# Django reads these settings variables for GeoDjango
+GDAL_LIBRARY_PATH = r"C:\OSGeo4W\bin\gdal308.dll"
+GEOS_LIBRARY_PATH = r"C:\OSGeo4W\bin\geos_c.dll"
+
+# =========================================================
 # SECURITY / ENV
 # =========================================================
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me")
@@ -107,11 +124,13 @@ else:
             "NAME": os.getenv("POSTGRES_DB", "poweend"),
             "USER": os.getenv("POSTGRES_USER", "poweend"),
             "PASSWORD": os.getenv("POSTGRES_PASSWORD", "Poweend26"),
-            # ✅ sur Windows, évite parfois IPv6 ::1
             "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
             "PORT": os.getenv("POSTGRES_PORT", "5432"),
         }
     }
+
+# ❌ IMPORTANT: ne jamais importer connection / faire print DB ici.
+# Pour voir la DB: fais-le dans `python manage.py shell` (pas dans settings.py)
 
 # =========================================================
 # STATIC FILES (WhiteNoise)
@@ -137,22 +156,18 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # =========================================================
 # CORS + CSRF
 # =========================================================
-
 CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "False").lower() == "true"
 
-# Domaines exacts (stables)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://frontend-dql2.vercel.app",
 ]
 
-# ✅ Autorise les URLs preview Vercel (qui changent à chaque déploiement)
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https:\/\/frontend-dql2-.*\.vercel\.app$",
 ]
 
-# Important si tu utilises Authorization header / tokens (tu l'as déjà)
 CORS_ALLOW_HEADERS = [
     "accept",
     "accept-encoding",
@@ -167,42 +182,23 @@ CORS_ALLOW_HEADERS = [
 
 CORS_ALLOW_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
 
-# ✅ Laisse False tant que tu n'utilises pas les cookies de session
 CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "False").lower() == "true"
-
-# ✅ Option utile : s'assure que l'en-tête Origin est bien pris en compte
 CORS_VARY_HEADER = True
 
-# CSRF (utile surtout si tu fais des POST via cookies/session)
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://frontend-dql2.vercel.app",
 ]
 
-# Django 5.x : supporte ce regex (ok chez toi)
 CSRF_TRUSTED_ORIGIN_REGEXES = [
     r"^https:\/\/frontend-dql2-.*\.vercel\.app$",
 ]
 
-
-
 # =========================================================
-# DRF (✅ ici, pas dans INSTALLED_APPS)
+# DRF
 # =========================================================
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework_gis.pagination.GeoJsonPagination",
     "PAGE_SIZE": 1000,
 }
-
-# =========================================================
-# GDAL / GEOS (Windows seulement)
-# =========================================================
-if os.name == "nt":
-    os.environ.setdefault("OSGEO4W_ROOT", r"C:\OSGeo4W")
-    os.environ.setdefault("GDAL_DATA", r"C:\OSGeo4W\share\gdal")
-    os.environ.setdefault("PROJ_LIB", r"C:\OSGeo4W\share\proj")
-    os.environ["PATH"] = r"C:\OSGeo4W\bin;" + os.environ.get("PATH", "")
-
-    GDAL_LIBRARY_PATH = r"C:\OSGeo4W\bin\gdal308.dll"
-    GEOS_LIBRARY_PATH = r"C:\OSGeo4W\bin\geos_c.dll"
