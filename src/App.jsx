@@ -17,7 +17,7 @@ export default function App() {
 
   useEffect(() => {
     if (!API_BASE_URL) {
-      setError("VITE_API_BASE_URL n'est pas défini en production.");
+      setError("VITE_API_BASE_URL n'est pas défini (prod).");
       setLoading(false);
       return;
     }
@@ -25,10 +25,11 @@ export default function App() {
     const abort = new AbortController();
 
     const fetchGeojson = async (url, label, optional = false) => {
-      const res = await fetch(url, { signal: abort.signal });
+      const res = await fetch(url, { signal: abort.signal, cache: "no-store" });
       if (!res.ok) {
-        if (optional) return null; // ✅ ne bloque pas tout
-        throw new Error(`${label} HTTP ${res.status} (${url})`);
+        const msg = `${label} HTTP ${res.status} (${url})`;
+        if (optional) return null;
+        throw new Error(msg);
       }
       return res.json();
     };

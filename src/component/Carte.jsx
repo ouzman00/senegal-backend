@@ -23,6 +23,32 @@ const API_BASE_URL = (
   (import.meta.env.DEV ? "http://127.0.0.1:8000" : "")
 ).replace(/\/$/, "");
 
+function normalizeGeoJSON(input) {
+  if (!input) return null;
+
+  // DRF pagination: { count, next, previous, results: [...] }
+  if (input.results && Array.isArray(input.results)) {
+    return { type: "FeatureCollection", features: input.results };
+  }
+
+  // List: [...]
+  if (Array.isArray(input)) {
+    return { type: "FeatureCollection", features: input };
+  }
+
+  // Already FeatureCollection
+  if (input.type === "FeatureCollection" && Array.isArray(input.features)) {
+    return input;
+  }
+
+  // Could be a single Feature
+  if (input.type === "Feature") {
+    return { type: "FeatureCollection", features: [input] };
+  }
+
+  return null;
+}
+
 export default function Carte({ hopitauxData, ecolesData }) {
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
@@ -36,7 +62,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
     overlay: null,
   });
 
-  const staticLayersRef = useRef({ Regions: null, Communes: null }); // ✅ pour gérer removeLayer proprement
+  const staticLayersRef = useRef({ Regions: null, Communes: null });
 
   const [visibleLayers, setVisibleLayers] = useState({
     Regions: true,
@@ -142,7 +168,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
   }, []);
 
   // =======================
-  // LOAD STATIC GEOJSON (robuste + removeLayer propre)
+  // LOAD STATIC GEOJSON
   // =======================
   useEffect(() => {
     if (!map) return;
@@ -177,7 +203,6 @@ export default function Carte({ hopitauxData, ecolesData }) {
 
     (async () => {
       try {
-        // remove anciennes couches statiques (si elles existent)
         const oldRegions = staticLayersRef.current.Regions;
         const oldCommunes = staticLayersRef.current.Communes;
         if (oldRegions) map.removeLayer(oldRegions);
@@ -204,7 +229,6 @@ export default function Carte({ hopitauxData, ecolesData }) {
           }
         }
 
-        // stocke refs statiques
         staticLayersRef.current = {
           Regions: created.Regions ?? null,
           Communes: created.Communes ?? null,
@@ -235,16 +259,17 @@ export default function Carte({ hopitauxData, ecolesData }) {
   // HOPITAUX
   // =======================
   useEffect(() => {
-    if (!map || !hopitauxData?.features) return;
+    if (!map || !hopitauxData) return;
 
     if (layers.hopitaux) map.removeLayer(layers.hopitaux);
 
-    const feats = new GeoJSON().readFeatures(hopitauxData, {
+    const geojson = normalizeGeoJSON(hopitauxData);
+    if (!geojson?.features?.length) return;
+
+    const feats = new GeoJSON().readFeatures(geojson, {
       dataProjection: "EPSG:4326",
       featureProjection: "EPSG:3857",
     });
-
-    if (!feats.length) return;
 
     feats.forEach((f) => f.set("layerName", "Hôpitaux"));
 
@@ -264,22 +289,33 @@ export default function Carte({ hopitauxData, ecolesData }) {
 
     map.addLayer(layer);
     setLayers((prev) => ({ ...prev, hopitaux: layer }));
+
+    // ✅ Zoom automatique sur les hôpitaux (utile si points hors écran)
+    const extent = source.getExtent();
+    if (extent && extent.every(Number.isFinite)) {
+      map.getView().fit(extent, {
+        padding: [50, 50, 50, 50],
+        maxZoom: 14,
+        duration: 700,
+      });
+    }
   }, [map, hopitauxData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // =======================
   // ECOLES
   // =======================
   useEffect(() => {
-    if (!map || !ecolesData?.features) return;
+    if (!map || !ecolesData) return;
 
     if (layers.ecoles) map.removeLayer(layers.ecoles);
 
-    const feats = new GeoJSON().readFeatures(ecolesData, {
+    const geojson = normalizeGeoJSON(ecolesData);
+    if (!geojson?.features?.length) return;
+
+    const feats = new GeoJSON().readFeatures(geojson, {
       dataProjection: "EPSG:4326",
       featureProjection: "EPSG:3857",
     });
-
-    if (!feats.length) return;
 
     feats.forEach((f) => f.set("layerName", "Écoles"));
 
