@@ -137,18 +137,22 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # =========================================================
 # CORS + CSRF
 # =========================================================
+
 CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "False").lower() == "true"
 
+# Domaines exacts (stables)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://frontend-dql2.vercel.app",
 ]
 
-CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "False").lower() == "true"
+# ✅ Autorise les URLs preview Vercel (qui changent à chaque déploiement)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/frontend-dql2-.*\.vercel\.app$",
+]
 
-CORS_ALLOW_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
-
+# Important si tu utilises Authorization header / tokens (tu l'as déjà)
 CORS_ALLOW_HEADERS = [
     "accept",
     "accept-encoding",
@@ -161,11 +165,27 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
+CORS_ALLOW_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
+
+# ✅ Laisse False tant que tu n'utilises pas les cookies de session
+CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "False").lower() == "true"
+
+# ✅ Option utile : s'assure que l'en-tête Origin est bien pris en compte
+CORS_VARY_HEADER = True
+
+# CSRF (utile surtout si tu fais des POST via cookies/session)
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://frontend-dql2.vercel.app",
 ]
+
+# Django 5.x : supporte ce regex (ok chez toi)
+CSRF_TRUSTED_ORIGIN_REGEXES = [
+    r"^https:\/\/frontend-dql2-.*\.vercel\.app$",
+]
+
+
 
 # =========================================================
 # DRF (✅ ici, pas dans INSTALLED_APPS)
