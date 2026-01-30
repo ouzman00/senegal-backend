@@ -74,7 +74,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
       {
         id: "Regions",
         // ✅ chemin Vercel-friendly (fichier dans /public)
-        url: "/donnees_shp/Régions.geojson",
+        url: "/donnees_shp/regions.geojson",
         color: "#1E0F1C",
         width: 3,
         fill: "rgba(255,0,0,0)",
@@ -82,7 +82,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
       },
       {
         id: "Communes",
-        url: "/donnees_shp/Communes.geojson",
+        url: "/donnees_shp/communes.geojson",
         color: "#A7001E",
         width: 1,
         fill: "rgba(255,0,0,0)",
