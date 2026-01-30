@@ -7,10 +7,36 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY / ENV
 # =========================================================
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me")
+
+# DEBUG doit être False en prod (Render)
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-# Exemple: "127.0.0.1,localhost,mon-backend.onrender.com"
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+# Render fournit automatiquement ce hostname
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+
+# ALLOWED_HOSTS: local + Render
+# Tu peux aussi surcharger via variable env ALLOWED_HOSTS="a,b,c"
+default_hosts = ["127.0.0.1", "localhost"]
+env_hosts = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
+
+ALLOWED_HOSTS = list(dict.fromkeys(default_hosts + env_hosts))  # unique
+if RENDER_EXTERNAL_HOSTNAME:
+    if RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# CSRF (utile pour /admin + POST depuis ton domaine)
+CSRF_TRUSTED_ORIGINS = []
+csrf_env = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+if csrf_env:
+    CSRF_TRUSTED_ORIGINS += [o.strip() for o in csrf_env.split(",") if o.strip()]
+if RENDER_EXTERNAL_HOSTNAME:
+    origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
+
+# (optionnel) sécurité en prod si tu veux forcer https derrière proxy Render
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # =========================================================
 # APPS
@@ -24,10 +50,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.gis",
-
     "rest_framework",
     "rest_framework_gis",
-
     "maps",
 ]
 
@@ -36,9 +60,8 @@ INSTALLED_APPS = [
 # =========================================================
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # ✅ juste après SecurityMiddleware
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # juste après SecurityMiddleware
     "corsheaders.middleware.CorsMiddleware",
-
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -48,10 +71,11 @@ MIDDLEWARE = [
 ]
 
 # =========================================================
-# URLS / WSGI
+# URLS / WSGI / ASGI
 # =========================================================
 ROOT_URLCONF = "mybackend.urls"
 WSGI_APPLICATION = "mybackend.wsgi.application"
+ASGI_APPLICATION = "mybackend.asgi.application"
 
 # =========================================================
 # TEMPLATES
@@ -75,14 +99,9 @@ TEMPLATES = [
 # =========================================================
 # DATABASE (PostGIS)
 # =========================================================
-# En prod (Render), on utilisera DATABASE_URL
-# En local, tu peux garder ton Postgres local
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
-    # Render fournit une URL postgres ; pour PostGIS sur Render,
-    # tu peux garder ENGINE postgis avec les mêmes credentials
-    # mais le plus simple: utiliser dj_database_url.
     import dj_database_url
 
     DATABASES = {
@@ -91,6 +110,7 @@ if DATABASE_URL:
     # IMPORTANT si tu as GeometryField:
     DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 else:
+    # ⚠️ Évite de laisser un mot de passe en dur : mets-le en variable d'env
     DATABASES = {
         "default": {
             "ENGINE": "django.contrib.gis.db.backends.postgis",
@@ -105,10 +125,9 @@ else:
 # =========================================================
 # STATIC FILES
 # =========================================================
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# WhiteNoise storage (cache-busting)
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
@@ -126,9 +145,8 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # =========================================================
-# CORS (Vercel + local dev)
+# CORS (local dev + prod via env)
 # =========================================================
-# En local:
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -136,8 +154,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-# En prod: ajoute ton domaine Vercel via variable env:
-# CORS_ALLOWED_ORIGINS="https://ton-frontend.vercel.app"
 cors_env = os.getenv("CORS_ALLOWED_ORIGINS")
 if cors_env:
     CORS_ALLOWED_ORIGINS += [o.strip() for o in cors_env.split(",") if o.strip()]
@@ -147,7 +163,6 @@ CORS_ALLOW_ALL_ORIGINS = False
 # =========================================================
 # GDAL / GEOS (Windows seulement)
 # =========================================================
-# ⚠️ Ne jamais mettre des DLL Windows en prod (Linux).
 if os.name == "nt":
     os.environ.setdefault("OSGEO4W_ROOT", r"C:\OSGeo4W")
     os.environ.setdefault("GDAL_DATA", r"C:\OSGeo4W\share\gdal")
