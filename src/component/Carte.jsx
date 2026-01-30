@@ -82,7 +82,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
       },
       {
         id: "Communes",
-        url: "/donnees_shp/communes.geojson",
+        url: "/donnees_shp/Communes.geojson",
         color: "#A7001E",
         width: 1,
         fill: "rgba(255,0,0,0)",
