@@ -9,13 +9,29 @@ import GeoJSON from "ol/format/GeoJSON";
 export default function MapEditor({
   map,
   editableLayer, // VectorLayer
-  apiBaseUrl, // ✅ on le reçoit depuis Carte.jsx (recommandé)
+  apiBaseUrl, // OBLIGATOIRE (env)
+  drawType = "Point", // "Point" | "Polygon"
+  defaultName = "Nouvel objet",
 }) {
   const [mode, setMode] = useState("none"); // none | draw | modify
   const [selectedId, setSelectedId] = useState(null);
   const geojson = useMemo(() => new GeoJSON(), []);
 
-  // Sélection (pour delete)
+  /* =======================
+     GARDE ABSOLUE
+  ======================= */
+  if (!apiBaseUrl) {
+    console.error("MapEditor: apiBaseUrl manquant");
+    return (
+      <div className="p-3 bg-red-100 border border-red-300 rounded">
+        MapEditor désactivé (API non configurée)
+      </div>
+    );
+  }
+
+  /* =======================
+     SELECT (DELETE)
+  ======================= */
   useEffect(() => {
     if (!map || !editableLayer) return;
 
@@ -33,9 +49,11 @@ export default function MapEditor({
     return () => map.removeInteraction(select);
   }, [map, editableLayer]);
 
-  // Draw / Modify / Snap
+  /* =======================
+     DRAW / MODIFY / SNAP
+  ======================= */
   useEffect(() => {
-    if (!map || !editableLayer || !apiBaseUrl) return;
+    if (!map || !editableLayer) return;
 
     const source = editableLayer.getSource();
     if (!source) return;
@@ -44,8 +62,9 @@ export default function MapEditor({
     let modify = null;
     const snap = new Snap({ source });
 
+    /* -------- DRAW -------- */
     if (mode === "draw") {
-      draw = new Draw({ source, type: "Point" });
+      draw = new Draw({ source, type: drawType });
 
       draw.on("drawend", async (evt) => {
         const feature = evt.feature;
@@ -56,7 +75,7 @@ export default function MapEditor({
         });
 
         const payload = {
-          nom: "Nouveau hopital",
+          nom: defaultName,
           adresse: null,
           geom: geo.geometry,
         };
@@ -67,28 +86,27 @@ export default function MapEditor({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
-          if (!res.ok) throw new Error(`POST failed: HTTP ${res.status}`);
-          const created = await res.json();
 
+          if (!res.ok) throw new Error(`POST HTTP ${res.status}`);
+
+          const created = await res.json();
           feature.setId(created.id);
-          feature.set("layerName", "Hôpitaux");
-          feature.set("nom", created.properties?.nom ?? created.nom ?? payload.nom);
-          feature.set("adresse", created.properties?.adresse ?? created.adresse ?? null);
+          feature.set("nom", created.nom ?? defaultName);
+          feature.set("adresse", created.adresse ?? null);
         } catch (err) {
-          console.error(err);
+          console.error("MapEditor POST:", err);
           source.removeFeature(feature);
-          alert("Création impossible (API). Regarde la console.");
+          alert("Création impossible (API)");
         }
       });
     }
 
+    /* -------- MODIFY -------- */
     if (mode === "modify") {
       modify = new Modify({ source });
 
       modify.on("modifyend", async (evt) => {
-        const features = evt.features.getArray();
-
-        for (const feature of features) {
+        for (const feature of evt.features.getArray()) {
           const id = feature.getId();
           if (!id) continue;
 
@@ -97,18 +115,17 @@ export default function MapEditor({
             featureProjection: "EPSG:3857",
           });
 
-          const payload = { geom: geo.geometry };
-
           try {
             const res = await fetch(`${apiBaseUrl}${id}/`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
+              body: JSON.stringify({ geom: geo.geometry }),
             });
-            if (!res.ok) throw new Error(`PATCH failed: HTTP ${res.status}`);
+
+            if (!res.ok) throw new Error(`PATCH HTTP ${res.status}`);
           } catch (err) {
-            console.error(err);
-            alert("Modification non enregistrée (API). Regarde la console.");
+            console.error("MapEditor PATCH:", err);
+            alert("Modification non enregistrée");
           }
         }
       });
@@ -123,59 +140,74 @@ export default function MapEditor({
       if (modify) map.removeInteraction(modify);
       map.removeInteraction(snap);
     };
-  }, [map, editableLayer, mode, apiBaseUrl, geojson]);
+  }, [map, editableLayer, mode, apiBaseUrl, geojson, drawType, defaultName]);
 
+  /* =======================
+     DELETE
+  ======================= */
   const deleteSelected = async () => {
-    if (!editableLayer || !apiBaseUrl) return;
-
-    const source = editableLayer.getSource();
-    if (!source) return;
-
-    const id = selectedId;
-    if (!id) return alert("Sélectionne un hôpital à supprimer.");
+    if (!editableLayer || !selectedId) {
+      alert("Sélectionne un objet");
+      return;
+    }
 
     try {
-      const res = await fetch(`${apiBaseUrl}${id}/`, { method: "DELETE" });
-      if (!res.ok && res.status !== 204) throw new Error(`DELETE failed: HTTP ${res.status}`);
+      const res = await fetch(`${apiBaseUrl}${selectedId}/`, {
+        method: "DELETE",
+      });
 
-      const f = source.getFeatureById(id);
-      if (f) source.removeFeature(f);
+      if (!res.ok && res.status !== 204)
+        throw new Error(`DELETE HTTP ${res.status}`);
+
+      editableLayer.getSource().removeFeature(
+        editableLayer.getSource().getFeatureById(selectedId)
+      );
       setSelectedId(null);
     } catch (err) {
-      console.error(err);
-      alert("Suppression impossible (API). Regarde la console.");
+      console.error("MapEditor DELETE:", err);
+      alert("Suppression impossible");
     }
   };
 
+  /* =======================
+     UI
+  ======================= */
   return (
-    <div className="p-4 bg-white border border-gray-300 rounded-xl shadow-md flex flex-col gap-3">
-      <div className="font-semibold">Éditeur (Hôpitaux)</div>
+    <div className="p-3 bg-white border border-gray-300 rounded-lg shadow flex flex-col gap-2">
+      <div className="font-semibold">
+        Éditeur ({drawType === "Polygon" ? "Surface" : "Point"})
+      </div>
 
       <div className="flex gap-2 flex-wrap">
         <button
-          className={`px-4 py-2 rounded-xl ${
+          className={`px-3 py-1 rounded ${
             mode === "draw" ? "bg-gray-800 text-white" : "bg-gray-200"
           }`}
-          onClick={() => setMode((m) => (m === "draw" ? "none" : "draw"))}
+          onClick={() => setMode(mode === "draw" ? "none" : "draw")}
         >
-          {mode === "draw" ? "Arrêter Draw" : "Draw point"}
+          Draw {drawType}
         </button>
 
         <button
-          className={`px-4 py-2 rounded-xl ${
+          className={`px-3 py-1 rounded ${
             mode === "modify" ? "bg-gray-800 text-white" : "bg-gray-200"
           }`}
-          onClick={() => setMode((m) => (m === "modify" ? "none" : "modify"))}
+          onClick={() => setMode(mode === "modify" ? "none" : "modify")}
         >
-          {mode === "modify" ? "Arrêter Modify" : "Modify"}
+          Modify
         </button>
 
-        <button className="px-4 py-2 rounded-xl bg-red-200" onClick={deleteSelected}>
-          Delete sélection
+        <button
+          className="px-3 py-1 rounded bg-red-200"
+          onClick={deleteSelected}
+        >
+          Delete
         </button>
       </div>
 
-      <div className="text-xs text-gray-600">Sélection: {selectedId ? `ID ${selectedId}` : "aucune"}</div>
+      <div className="text-xs text-gray-600">
+        Sélection : {selectedId ? `ID ${selectedId}` : "aucune"}
+      </div>
     </div>
   );
 }
