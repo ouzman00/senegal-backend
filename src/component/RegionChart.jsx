@@ -1,6 +1,6 @@
-"use client"; // Obligatoire si Next.js App Router
+"use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,77 +11,81 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 
-// Enregistrement des modules Chart.js
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+let registered = false;
+if (!registered) {
+  ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+  registered = true;
+}
+
+function norm(v) {
+  return String(v ?? "").trim().toLowerCase();
+}
 
 export default function RegionChart({ regionsData = [], selectedRegion = null }) {
-  // Retour si pas de données
-  if (!regionsData || regionsData.length === 0) return null;
+  const rows = useMemo(() => {
+    const arr = Array.isArray(regionsData) ? regionsData : [];
+    const cleaned = arr
+      .map((r) => ({
+        name: r?.name ?? "",
+        superficie: Number(r?.superficie ?? 0) || 0,
+      }))
+      .filter((r) => r.name);
 
-  // Préparation des données
+    cleaned.sort((a, b) => b.superficie - a.superficie);
+    return cleaned;
+  }, [regionsData]);
+
+  if (!rows.length) return null;
+
+  const sel = norm(selectedRegion);
+
   const data = {
-    labels: regionsData.map((r) => r.name),
+    labels: rows.map((r) => r.name),
     datasets: [
       {
         label: "Superficie (km²)",
-        data: regionsData.map((r) => Number(r.superficie) || 0),
-        backgroundColor: regionsData.map((r) =>
-          r.name === selectedRegion
-            ? "rgba(255, 99, 132, 0.9)" // barre sélectionnée
-            : "rgba(54, 162, 235, 0.6)" // barre normale
+        data: rows.map((r) => r.superficie),
+        backgroundColor: rows.map((r) =>
+          norm(r.name) === sel ? "rgba(255, 99, 132, 0.9)" : "rgba(54, 162, 235, 0.6)"
         ),
-        borderColor: regionsData.map((r) =>
-          r.name === selectedRegion
-            ? "rgb(255, 99, 132)"
-            : "rgba(54, 162, 235, 1)"
+        borderColor: rows.map((r) =>
+          norm(r.name) === sel ? "rgb(255, 99, 132)" : "rgba(54, 162, 235, 1)"
         ),
-        borderWidth: regionsData.map((r) => (r.name === selectedRegion ? 3 : 1)),
+        borderWidth: rows.map((r) => (norm(r.name) === sel ? 3 : 1)),
       },
     ],
   };
 
-  // Options du graphique
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false,
     plugins: {
-      legend: {
-        display: true, // true si tu veux la légende, false sinon
-        position: "top",
-      },
+      legend: { display: true, position: "top" },
       tooltip: {
-        enabled: true, // tooltips au survol
         callbacks: {
-          label: (context) => `${context.parsed.y.toLocaleString()} km²`,
+          label: (ctx) => `${Number(ctx.parsed?.y ?? 0).toLocaleString()} km²`,
         },
       },
-      // Désactivation des étiquettes sur les barres si chartjs-plugin-datalabels est chargé globalement
-      datalabels: {
-        display: false,
-      },
+      datalabels: { display: false },
     },
     scales: {
       y: {
         beginAtZero: true,
-        title: {
-          display: true,
-          text: "Superficie (km²)",
-        },
+        title: { display: true, text: "Superficie (km²)" },
+        ticks: { callback: (v) => Number(v).toLocaleString() },
       },
       x: {
-        title: {
-          display: true,
-          text: "Régions",
-        },
+        title: { display: true, text: "Régions" },
+        ticks: { autoSkip: true, maxRotation: 45, minRotation: 0 },
       },
     },
   };
 
   return (
-  <div className="p-4 bg-white rounded-xl shadow-md border border-gray-300 h-[260px] sm:h-[300px]">
-    <h3 className="font-semibold mb-2">Superficie des régions</h3>
-    <Bar data={data} options={options} />
-  </div>
-);
-
+    <div className="p-4 bg-white rounded-xl shadow-md border border-gray-300 h-[260px] sm:h-[300px]">
+      <h3 className="font-semibold mb-2">Superficie des régions</h3>
+      <Bar data={data} options={options} />
+    </div>
+  );
 }

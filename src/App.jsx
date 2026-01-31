@@ -5,10 +5,19 @@ import { fetchGeoJSON, getApiBaseUrl } from "./utils/api";
 
 export default function App() {
   const API_BASE_URL = useMemo(() => getApiBaseUrl(), []);
-  const [hopitauxData, setHopitauxData] = useState(null);
-  const [ecolesData, setEcolesData] = useState(null);
+  const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const API_LAYERS = useMemo(
+    () => [
+      { id: "hopitaux", path: "/api/hopitaux/?page_size=2000" },
+      { id: "ecoles", path: "/api/ecoles/?page_size=2000" },
+      // { id: "pharmacies", path: "/api/pharmacies/?page_size=5000" },
+      // { id: "boutiques", path: "/api/boutiques/?page_size=5000" },
+    ],
+    []
+  );
 
   useEffect(() => {
     if (!API_BASE_URL) {
@@ -24,17 +33,32 @@ export default function App() {
         setLoading(true);
         setError(null);
 
-        const hopUrl = `${API_BASE_URL}/api/hopitaux/?page_size=1000`;
-        const ecoUrl = `${API_BASE_URL}/api/ecoles/?page_size=1000`;
+        const results = await Promise.allSettled(
+          API_LAYERS.map(async (l) => {
+            const url = `${API_BASE_URL}${l.path}`;
+            const fc = await fetchGeoJSON(url, { signal: abort.signal });
+            return [l.id, fc];
+          })
+        );
 
-        const hop = await fetchGeoJSON(hopUrl, { signal: abort.signal });
-        const eco = await fetchGeoJSON(ecoUrl, { signal: abort.signal });
+        const obj = {};
+        const failed = [];
 
-        setHopitauxData(hop);
-        setEcolesData(eco);
+        for (const r of results) {
+          if (r.status === "fulfilled") {
+            const [id, fc] = r.value;
+            obj[id] = fc;
+            console.log(`${id} features:`, fc?.features?.length ?? 0);
+          } else {
+            failed.push(r.reason?.message || String(r.reason));
+          }
+        }
 
-        console.log("Hopitaux features:", hop?.features?.length ?? 0);
-        console.log("Ecoles features:", eco?.features?.length ?? 0);
+        setData(obj);
+
+        if (failed.length) {
+          console.warn("Certaines couches API n'ont pas pu être chargées:", failed);
+        }
       } catch (err) {
         if (err.name !== "AbortError") setError(err.message || "Erreur inconnue");
       } finally {
@@ -43,10 +67,10 @@ export default function App() {
     })();
 
     return () => abort.abort();
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, API_LAYERS]);
 
   if (loading) return <div>Chargement des données...</div>;
   if (error) return <div>Erreur API: {error}</div>;
 
-  return <Carte hopitauxData={hopitauxData} ecolesData={ecolesData} />;
+  return <Carte data={data} />;
 }

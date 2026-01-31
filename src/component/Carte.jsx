@@ -9,6 +9,7 @@ import XYZ from "ol/source/XYZ";
 import GeoJSON from "ol/format/GeoJSON";
 import { fromLonLat } from "ol/proj";
 import { Style, Stroke, Fill, Circle as CircleStyle } from "ol/style";
+import { getArea } from "ol/sphere";
 
 import { getApiBaseUrl } from "../utils/api";
 
@@ -21,7 +22,6 @@ import Echelle from "./Echelle";
 import Recherche from "./Recherche";
 
 function withBase(path) {
-  // utile si ton app est servie dans un sous-dossier (rare sur Vercel, mais safe)
   const base = import.meta.env.BASE_URL || "/";
   const cleanBase = base.endsWith("/") ? base.slice(0, -1) : base;
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
@@ -34,58 +34,133 @@ async function fetchStaticGeoJSON(url) {
   return res.json();
 }
 
-export default function Carte({ hopitauxData, ecolesData }) {
+function makeStyle(def) {
+  if (def.kind === "point") {
+    return new Style({
+      image: new CircleStyle({
+        radius: def.radius ?? 6,
+        fill: new Fill({ color: def.pointFill ?? "#00FF00" }),
+        stroke: new Stroke({
+          color: def.pointStroke ?? "#000",
+          width: def.pointStrokeWidth ?? 1,
+        }),
+      }),
+    });
+  }
+  return new Style({
+    stroke: new Stroke({ color: def.stroke ?? "#1D4ED8", width: def.width ?? 2 }),
+    fill: def.fill ? new Fill({ color: def.fill }) : undefined,
+  });
+}
+
+function buildVectorLayerFromFC(fc, def) {
+  if (!fc?.features?.length) return null;
+
+  const feats = new GeoJSON().readFeatures(fc, {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857",
+  });
+
+  feats.forEach((f) => f.set("layerName", def.name));
+
+  const source = new VectorSource({ features: feats });
+
+  const layer = new VectorLayer({
+    source,
+    style: makeStyle(def),
+  });
+
+  layer.set("id", def.id);
+  return { layer, source };
+}
+
+function removeLayerById(map, id) {
+  const arr = map.getLayers().getArray();
+  const toRemove = arr.filter((l) => l?.get?.("id") === id);
+  toRemove.forEach((l) => map.removeLayer(l));
+}
+
+function areaKm2FromFeature3857(feature) {
+  const geom = feature.getGeometry();
+  if (!geom) return 0;
+  const g = geom.clone().transform("EPSG:3857", "EPSG:4326");
+  const m2 = getArea(g, { projection: "EPSG:4326" });
+  return m2 / 1_000_000;
+}
+
+export default function Carte({ data }) {
   const API_BASE_URL = useMemo(() => getApiBaseUrl(), []);
-
   const mapRef = useRef(null);
+
   const [map, setMap] = useState(null);
-
-  const [layers, setLayers] = useState({
-    Regions: null,
-    Communes: null,
-    hopitaux: null,
-    ecoles: null,
-    highlight: null,
-    overlay: null,
-  });
-
-  const staticLayersRef = useRef({ Regions: null, Communes: null });
-
-  const [visibleLayers, setVisibleLayers] = useState({
-    Regions: true,
-    Communes: true,
-    hopitaux: true,
-    ecoles: false,
-  });
-
-  const visibleLayersRef = useRef(visibleLayers);
-  useEffect(() => {
-    visibleLayersRef.current = visibleLayers;
-  }, [visibleLayers]);
-
-  const [baseMapType, setBaseMapType] = useState("osm");
   const [selectedFeature, setSelectedFeature] = useState(null);
+  const [baseMapType, setBaseMapType] = useState("osm");
 
-  const layerConfigs = useMemo(
+  // ✅ Fit une seule fois par couche (sinon l’échelle bouge)
+  const fittedRef = useRef(new Set());
+
+  // ✅ Une seule config pour tout
+  const LAYER_DEFS = useMemo(
     () => [
       {
         id: "Regions",
-        url: withBase("/donnees_shp/regions.geojson"),
-        color: "#1E0F1C",
+        name: "Régions",
+        kind: "polygon",
+        source: { type: "static", url: withBase("/donnees_shp/regions.geojson") },
+        stroke: "#1E0F1C",
         width: 3,
         fill: "rgba(255,0,0,0)",
-        name: "Régions",
+        visibleDefault: true,
+        fitOnLoad: { maxZoom: 10, duration: 500 },
       },
       {
         id: "Communes",
-        url: withBase("/donnees_shp/communes.geojson"),
-        color: "#A7001E",
+        name: "Communes",
+        kind: "polygon",
+        source: { type: "static", url: withBase("/donnees_shp/communes.geojson") },
+        stroke: "#A7001E",
         width: 1,
         fill: "rgba(255,0,0,0)",
-        name: "Communes",
+        visibleDefault: true,
+      },
+      {
+        id: "hopitaux",
+        name: "Hôpitaux",
+        kind: "point",
+        source: { type: "data", key: "hopitaux" },
+        pointFill: "#00FF00",
+        visibleDefault: true,
+      },
+      {
+        id: "ecoles",
+        name: "Écoles",
+        kind: "polygon",
+        source: { type: "data", key: "ecoles" },
+        stroke: "#1D4ED8",
+        width: 2,
+        fill: "rgba(29,78,216,0.15)",
+        visibleDefault: false,
       },
     ],
     []
+  );
+
+  // ✅ visibilité auto
+  const [visibleLayers, setVisibleLayers] = useState(() => {
+    const init = {};
+    for (const d of LAYER_DEFS) init[d.id] = !!d.visibleDefault;
+    return init;
+  });
+
+  const legendItems = useMemo(
+    () =>
+      LAYER_DEFS.map((d) => ({
+        id: d.id,
+        name: d.name,
+        type: d.kind === "point" ? "point" : "line",
+        color: d.kind === "point" ? d.pointFill : d.stroke,
+      })),
+    [LAYER_DEFS]
   );
 
   // =======================
@@ -117,13 +192,9 @@ export default function Carte({ hopitauxData, ecolesData }) {
         fill: new Fill({ color: "rgba(255,215,0,0.15)" }),
       }),
     });
-    mapInstance.addLayer(highlightLayer);
+    highlightLayer.set("id", "highlight");
 
-    const overlayLayer = new VectorLayer({
-      source: new VectorSource(),
-      visible: false,
-    });
-    mapInstance.addLayer(overlayLayer);
+    mapInstance.addLayer(highlightLayer);
 
     mapInstance.on("singleclick", (evt) => {
       let found = null;
@@ -140,198 +211,111 @@ export default function Carte({ hopitauxData, ecolesData }) {
 
         highlightLayer.getSource().clear();
         highlightLayer.getSource().addFeature(found.clone());
-        overlayLayer.setVisible(true);
       } else {
         setSelectedFeature(null);
         highlightLayer.getSource().clear();
-        overlayLayer.setVisible(false);
       }
     });
 
-    setLayers((prev) => ({ ...prev, highlight: highlightLayer, overlay: overlayLayer }));
     setMap(mapInstance);
-
     return () => mapInstance.setTarget(undefined);
   }, []);
 
   // =======================
-  // LOAD STATIC GEOJSON (Regions/Communes)
+  // LOAD / UPDATE layers (sans dépendre de visibleLayers)
   // =======================
   useEffect(() => {
     if (!map) return;
 
     let cancelled = false;
 
-    const buildVectorLayer = (features, cfg) => {
-      features.forEach((f) => f.set("layerName", cfg.name));
-
-      const source = new VectorSource({ features });
-
-      const layer = new VectorLayer({
-        source,
-        visible: !!visibleLayersRef.current[cfg.id],
-        style: new Style({
-          stroke: new Stroke({ color: cfg.color, width: cfg.width ?? 2 }),
-          fill: cfg.fill ? new Fill({ color: cfg.fill }) : undefined,
-        }),
-      });
-
-      return { layer, source };
-    };
-
     (async () => {
-      try {
-        // Remove old static layers
-        const oldRegions = staticLayersRef.current.Regions;
-        const oldCommunes = staticLayersRef.current.Communes;
-        if (oldRegions) map.removeLayer(oldRegions);
-        if (oldCommunes) map.removeLayer(oldCommunes);
+      for (const def of LAYER_DEFS) {
+        try {
+          removeLayerById(map, def.id);
 
-        const created = {};
+          let fc = null;
 
-        for (const cfg of layerConfigs) {
-          try {
-            const json = await fetchStaticGeoJSON(cfg.url);
+          if (def.source.type === "static") {
+            const json = await fetchStaticGeoJSON(def.source.url);
             if (cancelled) return;
-
-            const feats = new GeoJSON().readFeatures(json, {
-              dataProjection: "EPSG:4326",
-              featureProjection: "EPSG:3857",
-            });
-
-            const { layer, source } = buildVectorLayer(feats, cfg);
-
-            map.addLayer(layer);
-            created[cfg.id] = layer;
-
-            // fit on regions
-            if (cfg.id === "Regions") {
-              const extent = source.getExtent();
-              if (extent && extent.every(Number.isFinite)) {
-                map.getView().fit(extent, {
-                  padding: [50, 50, 50, 50],
-                  maxZoom: 10,
-                  duration: 500,
-                });
-              }
-            }
-          } catch (e) {
-            // ✅ ne casse pas toute la carte si un fichier manque
-            console.error(`Erreur chargement couche ${cfg.id}:`, e);
+            fc = json;
+          } else {
+            fc = data?.[def.source.key] ?? null;
           }
+
+          const built = buildVectorLayerFromFC(fc, def);
+          if (!built) continue;
+
+          map.addLayer(built.layer);
+
+          // visibilité après ajout
+          built.layer.setVisible(!!visibleLayers[def.id]);
+
+          // fit une seule fois
+          if (def.fitOnLoad && !fittedRef.current.has(def.id)) {
+            const extent = built.source.getExtent();
+            if (extent && extent.every(Number.isFinite)) {
+              map.getView().fit(extent, {
+                padding: [50, 50, 50, 50],
+                maxZoom: def.fitOnLoad.maxZoom ?? 14,
+                duration: def.fitOnLoad.duration ?? 700,
+              });
+              fittedRef.current.add(def.id);
+            }
+          }
+        } catch (e) {
+          console.error(`Erreur chargement couche ${def.id}:`, e);
         }
-
-        staticLayersRef.current = {
-          Regions: created.Regions ?? null,
-          Communes: created.Communes ?? null,
-        };
-
-        setLayers((prev) => ({ ...prev, ...created }));
-      } catch (e) {
-        console.error("Erreur chargement couches statiques:", e);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [map, layerConfigs]);
+  }, [map, data, LAYER_DEFS, visibleLayers]);
 
   // =======================
-  // APPLY VISIBILITY
-  // =======================
-  useEffect(() => {
-    layers.Regions?.setVisible(!!visibleLayers.Regions);
-    layers.Communes?.setVisible(!!visibleLayers.Communes);
-    layers.hopitaux?.setVisible(!!visibleLayers.hopitaux);
-    layers.ecoles?.setVisible(!!visibleLayers.ecoles);
-  }, [visibleLayers, layers]);
-
-  // =======================
-  // HOPITAUX
+  // APPLY VISIBILITY only (pas de reload)
   // =======================
   useEffect(() => {
-    if (!map || !hopitauxData) return;
-
-    if (layers.hopitaux) map.removeLayer(layers.hopitaux);
-
-    if (!hopitauxData?.features?.length) {
-      console.warn("Hopitaux FeatureCollection vide:", hopitauxData);
-      return;
-    }
-
-    const feats = new GeoJSON().readFeatures(hopitauxData, {
-      dataProjection: "EPSG:4326",
-      featureProjection: "EPSG:3857",
+    if (!map) return;
+    map.getLayers().forEach((lyr) => {
+      const id = lyr.get?.("id");
+      if (!id) return;
+      if (id in visibleLayers) lyr.setVisible(!!visibleLayers[id]);
     });
-    feats.forEach((f) => f.set("layerName", "Hôpitaux"));
-
-    const source = new VectorSource({ features: feats });
-
-    const layer = new VectorLayer({
-      source,
-      visible: !!visibleLayersRef.current.hopitaux,
-      style: new Style({
-        image: new CircleStyle({
-          radius: 6,
-          fill: new Fill({ color: "#00FF00" }),
-          stroke: new Stroke({ color: "#000", width: 1 }),
-        }),
-      }),
-    });
-
-    map.addLayer(layer);
-    setLayers((prev) => ({ ...prev, hopitaux: layer }));
-
-    const extent = source.getExtent();
-    if (extent && extent.every(Number.isFinite)) {
-      map.getView().fit(extent, {
-        padding: [50, 50, 50, 50],
-        maxZoom: 14,
-        duration: 700,
-      });
-    }
-  }, [map, hopitauxData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, visibleLayers]);
 
   // =======================
-  // ECOLES
+  // Regions chart data (depuis la couche Regions)
   // =======================
-  useEffect(() => {
-    if (!map || !ecolesData) return;
+  const regionsData = useMemo(() => {
+    if (!map) return [];
+    const regLayer = map.getLayers().getArray().find((l) => l.get?.("id") === "Regions");
+    if (!regLayer) return [];
+    const src = regLayer.getSource?.();
+    if (!src) return [];
 
-    if (layers.ecoles) map.removeLayer(layers.ecoles);
-
-    if (!ecolesData?.features?.length) {
-      console.warn("Ecoles FeatureCollection vide:", ecolesData);
-      return;
-    }
-
-    const feats = new GeoJSON().readFeatures(ecolesData, {
-      dataProjection: "EPSG:4326",
-      featureProjection: "EPSG:3857",
+    return src.getFeatures().map((f) => {
+      const p = f.getProperties?.() || {};
+      const name = p.nom || p.NOM || p.name || p.NAME || "Région";
+      const sup =
+        Number(p.superficie || p.SUPERFICIE || p.area || 0) || areaKm2FromFeature3857(f);
+      return { name, superficie: sup };
     });
-    feats.forEach((f) => f.set("layerName", "Écoles"));
+  }, [map, data]);
 
-    const source = new VectorSource({ features: feats });
-
-    const layer = new VectorLayer({
-      source,
-      visible: !!visibleLayersRef.current.ecoles,
-      style: new Style({
-        stroke: new Stroke({ color: "#1D4ED8", width: 2 }),
-        fill: new Fill({ color: "rgba(29,78,216,0.15)" }),
-      }),
-    });
-
-    map.addLayer(layer);
-    setLayers((prev) => ({ ...prev, ecoles: layer }));
-  }, [map, ecolesData]); // eslint-disable-line react-hooks/exhaustive-deps
+  // hopitaux layer for editor
+  const hopLayer = useMemo(() => {
+    if (!map) return null;
+    return map.getLayers().getArray().find((l) => l.get?.("id") === "hopitaux") || null;
+  }, [map, data]);
 
   // =======================
-  // HELPERS
+  // UI helpers
   // =======================
-  const toggleLayer = (id) =>
-    setVisibleLayers((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleLayer = (id) => setVisibleLayers((p) => ({ ...p, [id]: !p[id] }));
 
   const changeBaseMap = (type) => {
     if (!map) return;
@@ -363,12 +347,7 @@ export default function Carte({ hopitauxData, ecolesData }) {
             <h3 className="font-semibold mb-2">Légende</h3>
 
             <ul className="flex flex-col gap-2">
-              {[
-                { id: "Regions", name: "Régions", color: "#1E0F1C" },
-                { id: "Communes", name: "Communes", color: "#A7001E" },
-                { id: "hopitaux", name: "Hôpitaux", color: "#00FF00", type: "point" },
-                { id: "ecoles", name: "Écoles", color: "#1D4ED8" },
-              ].map((l) => (
+              {legendItems.map((l) => (
                 <li key={l.id} className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -432,15 +411,16 @@ export default function Carte({ hopitauxData, ecolesData }) {
           <div className="w-80 flex flex-col gap-4">
             <Population selectedFeature={selectedFeature} />
 
-            {map && layers.hopitaux && (
+            {map && hopLayer && (
               <MapEditor
                 map={map}
-                editableLayer={layers.hopitaux}
-                apiBaseUrl={`${API_BASE_URL}/api/hopitaux/`}
+                editableLayer={hopLayer}
+                apiBaseUrl={`${API_BASE_URL}/api/hopitaux`}
               />
             )}
 
             <RegionChart
+              regionsData={regionsData}
               selectedRegion={selectedFeature?.nom || selectedFeature?.NOM || null}
             />
           </div>
