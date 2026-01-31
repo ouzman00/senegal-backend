@@ -24,16 +24,36 @@ if os.name == "nt":
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")  # ex: sn221-django-1.onrender.com
+ENV = os.getenv("ENV", "local").lower()  # local | production
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
-if RENDER_EXTERNAL_HOSTNAME:
+IS_RENDER = bool(RENDER_EXTERNAL_HOSTNAME)
+IS_PROD = (ENV == "production") or IS_RENDER
+
+# =========================================================
+# HOSTS
+# =========================================================
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0"]
+if IS_RENDER:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-if not DEBUG:
+CUSTOM_DOMAIN = os.getenv("CUSTOM_DOMAIN")
+if CUSTOM_DOMAIN:
+    ALLOWED_HOSTS.append(CUSTOM_DOMAIN)
+
+# =========================================================
+# HTTPS / COOKIES
+# - HTTPS seulement en prod/Render
+# =========================================================
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+
+if IS_PROD:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() == "true"
 
 # =========================================================
 # APPS
@@ -48,19 +68,16 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    # GIS
     "django.contrib.gis",
 
-    # DRF
     "rest_framework",
     "rest_framework_gis",
 
-    # App
     "maps",
 ]
 
 # =========================================================
-# MIDDLEWARE
+# MIDDLEWARE (CorsMiddleware doit être avant CommonMiddleware)
 # =========================================================
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -107,8 +124,8 @@ TEMPLATES = [
 # =========================================================
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# ✅ sécurité: si on est sur Render et que DATABASE_URL est absent -> erreur claire
-if os.getenv("RENDER_EXTERNAL_HOSTNAME") and not DATABASE_URL:
+# Sur Render, DATABASE_URL doit exister
+if IS_RENDER and not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is required on Render.")
 
 if DATABASE_URL:
@@ -116,13 +133,12 @@ if DATABASE_URL:
     DATABASES = {"default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
     DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 else:
-    # Local DEV uniquement
     DATABASES = {
         "default": {
             "ENGINE": "django.contrib.gis.db.backends.postgis",
             "NAME": os.getenv("POSTGRES_DB", "poweend"),
             "USER": os.getenv("POSTGRES_USER", "poweend"),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "Poweend26"),
             "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
             "PORT": os.getenv("POSTGRES_PORT", "5432"),
         }
@@ -132,6 +148,7 @@ else:
 # STATIC FILES (WhiteNoise)
 # =========================================================
 STATIC_URL = "/static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STORAGES = {
@@ -144,7 +161,7 @@ STORAGES = {
 # I18N
 # =========================================================
 LANGUAGE_CODE = "fr-fr"
-TIME_ZONE = "UTC"
+TIME_ZONE = os.getenv("TIME_ZONE", "UTC")
 USE_I18N = True
 USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -152,17 +169,24 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # =========================================================
 # CORS + CSRF
 # =========================================================
-CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "False").lower() == "true"
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://frontend-dql2.vercel.app",
-]
+# ✅ Simple et robuste :
+# - en local : autoriser tout (évite les galères)
+# - en prod : whitelist stricte
+CORS_ALLOW_ALL_ORIGINS = not IS_PROD
 
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https:\/\/frontend-dql2-.*\.vercel\.app$",
-]
+# Si tu veux absolument contrôler par env en local, remplace la ligne ci-dessus par :
+# CORS_ALLOW_ALL_ORIGINS = (not IS_PROD) and (os.getenv("CORS_ALLOW_ALL_ORIGINS", "False").lower() == "true")
+
+CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "False").lower() == "true"
+
+if not CORS_ALLOW_ALL_ORIGINS:
+    CORS_ALLOWED_ORIGINS = [
+        "https://frontend-dql2.vercel.app",
+    ]
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https:\/\/frontend-dql2-.*\.vercel\.app$",
+    ]
 
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -175,16 +199,19 @@ CORS_ALLOW_HEADERS = [
     "x-csrftoken",
     "x-requested-with",
 ]
-
 CORS_ALLOW_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
-CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "False").lower() == "true"
 CORS_VARY_HEADER = True
 
+# CSRF : en local (http) + en prod (https)
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://frontend-dql2.vercel.app",
 ]
+if IS_RENDER:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+if CUSTOM_DOMAIN:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{CUSTOM_DOMAIN}")
 
 CSRF_TRUSTED_ORIGIN_REGEXES = [
     r"^https:\/\/frontend-dql2-.*\.vercel\.app$",
