@@ -7,21 +7,16 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # =========================================================
-# GDAL / GEOS (Windows / OSGeo4W)
-# IMPORTANT: must be set BEFORE GeoDjango loads
+# GDAL / GEOS (Windows seulement)
 # =========================================================
 if os.name == "nt":
-    # OSGeo4W root
     os.environ.setdefault("OSGEO4W_ROOT", r"C:\OSGeo4W")
-    # Data folders (useful for some operations)
     os.environ.setdefault("GDAL_DATA", r"C:\OSGeo4W\share\gdal")
     os.environ.setdefault("PROJ_LIB", r"C:\OSGeo4W\share\proj")
-    # Make sure DLLs are discoverable
     os.environ["PATH"] = r"C:\OSGeo4W\bin;" + os.environ.get("PATH", "")
 
-# Django reads these settings variables for GeoDjango
-GDAL_LIBRARY_PATH = r"C:\OSGeo4W\bin\gdal308.dll"
-GEOS_LIBRARY_PATH = r"C:\OSGeo4W\bin\geos_c.dll"
+    GDAL_LIBRARY_PATH = r"C:\OSGeo4W\bin\gdal308.dll"
+    GEOS_LIBRARY_PATH = r"C:\OSGeo4W\bin\geos_c.dll"
 
 # =========================================================
 # SECURITY / ENV
@@ -39,7 +34,6 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    # SECURE_SSL_REDIRECT = True  # optionnel
 
 # =========================================================
 # APPS
@@ -113,24 +107,26 @@ TEMPLATES = [
 # =========================================================
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# ✅ sécurité: si on est sur Render et que DATABASE_URL est absent -> erreur claire
+if os.getenv("RENDER_EXTERNAL_HOSTNAME") and not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is required on Render.")
+
 if DATABASE_URL:
     import dj_database_url
     DATABASES = {"default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
     DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 else:
+    # Local DEV uniquement
     DATABASES = {
         "default": {
             "ENGINE": "django.contrib.gis.db.backends.postgis",
             "NAME": os.getenv("POSTGRES_DB", "poweend"),
             "USER": os.getenv("POSTGRES_USER", "poweend"),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "Poweend26"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
             "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
             "PORT": os.getenv("POSTGRES_PORT", "5432"),
         }
     }
-
-# ❌ IMPORTANT: ne jamais importer connection / faire print DB ici.
-# Pour voir la DB: fais-le dans `python manage.py shell` (pas dans settings.py)
 
 # =========================================================
 # STATIC FILES (WhiteNoise)
@@ -181,7 +177,6 @@ CORS_ALLOW_HEADERS = [
 ]
 
 CORS_ALLOW_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
-
 CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "False").lower() == "true"
 CORS_VARY_HEADER = True
 
