@@ -1,26 +1,30 @@
 import os
 import dj_database_url
-from .settings import *  # importe tout de settings.py
+from .settings import *  # noqa
 
 # =========================================================
 # PROD / RENDER
 # =========================================================
 DEBUG = False
-
 SECRET_KEY = os.getenv("SECRET_KEY", SECRET_KEY)
 
 RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS = [RENDER_EXTERNAL_HOSTNAME]
-else:
-    # fallback au cas où
-    ALLOWED_HOSTS = ["*"]
-
-# (optionnel) si tu as un domaine custom
 CUSTOM_DOMAIN = os.getenv("CUSTOM_DOMAIN")
+
+# Hosts
+ALLOWED_HOSTS = []
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 if CUSTOM_DOMAIN:
     ALLOWED_HOSTS.append(CUSTOM_DOMAIN)
 
+# Fallback (évite 400 "Bad Request" si host inattendu)
+# Tu peux enlever si tu veux strict, mais utile pendant debug
+ALLOWED_HOSTS += ["localhost", "127.0.0.1"]
+
+# =========================================================
+# DRF (JSON only)
+# =========================================================
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework_gis.pagination.GeoJsonPagination",
     "PAGE_SIZE": 1000,
@@ -28,7 +32,6 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.JSONRenderer",
     ],
 }
-
 
 # =========================================================
 # DATABASE (POSTGIS) - OBLIGATOIRE
@@ -40,45 +43,44 @@ if not DATABASE_URL:
 DATABASES = {
     "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
 }
-# ✅ CRUCIAL POUR GEODJANGO
 DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 
 # =========================================================
-# SECURITY (HTTPS derrière proxy Render)
+# SECURITY (Render derrière proxy)
 # =========================================================
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
-# (optionnel) si tu veux forcer https
-SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() == "true"
+# ✅ Pour une API publique, on évite de forcer la redirection https côté Django
+# (Render/Cloudflare gèrent déjà ça)
+SECURE_SSL_REDIRECT = False
 
 # =========================================================
-# STATIC (WhiteNoise)
-# =========================================================
-# Tu as déjà WhiteNoise dans settings.py, rien de spécial ici.
-
-# =========================================================
-# CORS / CSRF (si tu as un frontend Vercel)
+# CORS (Frontend Vercel)
 # =========================================================
 CORS_ALLOW_ALL_ORIGINS = False
 
-CORS_ALLOWED_ORIGINS = [
-    "https://frontend-dql2.vercel.app",
-]
-
+# ✅ Autorise TOUS les déploiements Vercel (preview + prod)
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https:\/\/frontend-dql2-.*\.vercel\.app$",
+    r"^https:\/\/.*\.vercel\.app$",
 ]
 
+# Optionnel : ton domaine exact (si tu veux le garder)
+# Mets ici TON URL Vercel actuelle (celle de l'erreur console)
+CORS_ALLOWED_ORIGINS = [
+    "https://senegal-frontend-f8q5-8hswi5gwj-ousus-projects-90bdaa8f.vercel.app",
+]
+
+# =========================================================
+# CSRF (utile si tu fais des POST depuis navigateur avec cookies)
+# Pour une API GET sans cookies : pas critique, mais on met propre.
+# =========================================================
 CSRF_TRUSTED_ORIGINS = [
-    "https://frontend-dql2.vercel.app",
+    "https://senegal-frontend-f8q5-8hswi5gwj-ousus-projects-90bdaa8f.vercel.app",
 ]
 
 if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
-
 if CUSTOM_DOMAIN:
     CSRF_TRUSTED_ORIGINS.append(f"https://{CUSTOM_DOMAIN}")
-
-SECURE_SSL_REDIRECT = False
