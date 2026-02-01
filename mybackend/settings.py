@@ -130,8 +130,16 @@ if IS_RENDER and not DATABASE_URL:
 
 if DATABASE_URL:
     import dj_database_url
-    DATABASES = {"default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
+
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+        )
+    }
+    # IMPORTANT pour GeoDjango
     DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
+
 else:
     DATABASES = {
         "default": {
@@ -143,6 +151,7 @@ else:
             "PORT": os.getenv("POSTGRES_PORT", "5432"),
         }
     }
+
 
 # =========================================================
 # STATIC FILES (WhiteNoise)
