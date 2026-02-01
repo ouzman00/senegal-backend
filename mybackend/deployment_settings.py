@@ -20,6 +20,14 @@ else:
 CUSTOM_DOMAIN = os.getenv("CUSTOM_DOMAIN")
 if CUSTOM_DOMAIN:
     ALLOWED_HOSTS.append(CUSTOM_DOMAIN)
+    
+REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "rest_framework_gis.pagination.GeoJsonPagination",
+    "PAGE_SIZE": 1000,
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+}
 
 # =========================================================
 # DATABASE (POSTGIS) - OBLIGATOIRE
