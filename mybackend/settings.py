@@ -126,6 +126,7 @@ import dj_database_url
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Sur Render, DATABASE_URL doit exister
 if IS_RENDER and not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is required on Render.")
 
@@ -133,6 +134,7 @@ if DATABASE_URL:
     DATABASES = {
         "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
+    # ✅ OBLIGATOIRE pour GeoDjango
     DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 else:
     DATABASES = {
@@ -145,7 +147,6 @@ else:
             "PORT": os.getenv("POSTGRES_PORT", "5432"),
         }
     }
-
 
 
 # =========================================================
