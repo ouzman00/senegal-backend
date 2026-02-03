@@ -1,5 +1,5 @@
 import os
-from django.core.asgi import get_asgi_application
+from django.core.wsgi import get_wsgi_application
 
 settings_module = (
     "mybackend.deployment_settings"
@@ -9,4 +9,4 @@ settings_module = (
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", settings_module)
 
-application = get_asgi_application()
+application = get_wsgi_application()
