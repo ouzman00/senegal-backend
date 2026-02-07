@@ -76,6 +76,19 @@ const DYNAMIC_LAYERS = [
       }),
     fitOnLoad: false,
   },
+  {
+  id: "commerces",            // ✅ FIX
+  name: "Commerces",
+  legendColor: "#7C3AED",
+  legendType: "line",
+  style: () =>
+    new Style({
+      stroke: new Stroke({ color: "#7C3AED", width: 2 }),
+      fill: new Fill({ color: "rgba(124,58,237,0.15)" }),
+    }),
+  fitOnLoad: true,
+},
+
   // ➕ demain: ajouter ici une nouvelle couche
 ];
 
