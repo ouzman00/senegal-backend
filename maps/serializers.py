@@ -1,11 +1,13 @@
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from .models import Hopital, Ecole, Parcelle, Commerce
 
+
 class HopitalSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Hopital
         geo_field = "geom"
         fields = ("id", "nom", "adresse")
+
 
 class EcoleSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -14,8 +16,7 @@ class EcoleSerializer(GeoFeatureModelSerializer):
         fields = ("id", "nom", "adresse")
 
 
-
-class ParcellesSerializer(GeoFeatureModelSerializer):
+class ParcelleSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Parcelle
         geo_field = "geom"
