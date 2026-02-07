@@ -1,23 +1,28 @@
-# Python
+# =========================
+# Python / Django
+# =========================
 __pycache__/
 *.pyc
-<<<<<<< HEAD
+*.pyo
+*.pyd
+
 .env
+.env.*
 .venv/
 
-# Django
 db.sqlite3
 staticfiles/
+media/
 
-# Node / Front
+# =========================
+# Frontend (Vite / Node)
+# =========================
 node_modules/
+dist/
 
-# OS / IDE
-.vscode/
-.idea/
-.DS_Store
-
+# =========================
 # Données SIG (IMPORTANT)
+# =========================
 *.shp
 *.shx
 *.dbf
@@ -28,24 +33,18 @@ node_modules/
 *.zip
 *.tif
 
-# Windows
-AppData/
-NTUSER.*
-=======
-*.pyo
-*.pyd
-
-# Django
-staticfiles/
-media/
-
-# Environnements
-.env
-.env.*
+# =========================
+# Logs
+# =========================
 *.log
 
-# IDE / OS
+# =========================
+# OS / IDE
+# =========================
 .vscode/
 .idea/
 .DS_Store
->>>>>>> cb34ecf150a0181d6991ffe1e4e154cb4179850a
+
+# Windows
+AppData/
+NTUSER.*
