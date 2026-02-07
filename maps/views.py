@@ -2,12 +2,7 @@ from rest_framework import viewsets
 from rest_framework_gis.pagination import GeoJsonPagination
 
 from .models import Hopital, Ecole, Parcelle, Commerce
-from .serializers import (
-    HopitalSerializer,
-    EcoleSerializer,
-    ParcelleSerializer,
-    CommerceSerializer,
-)
+from .serializers import HopitalSerializer, EcoleSerializer, ParcelleSerializer, CommerceSerializer
 
 
 class StandardGeoPagination(GeoJsonPagination):
@@ -35,6 +30,6 @@ class ParcelleViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class CommerceViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Commerce.objects.all()  # ✅ correct
+    queryset = Commerce.objects.all()
     serializer_class = CommerceSerializer
     pagination_class = StandardGeoPagination

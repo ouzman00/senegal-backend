@@ -78,6 +78,7 @@ CORS_ALLOWED_ORIGINS = [
 # =========================================================
 CSRF_TRUSTED_ORIGINS = [
     "https://senegal-frontend-f8q5-8hswi5gwj-ousus-projects-90bdaa8f.vercel.app",
+    "https://senegal-frontend-f8q5.vercel.app",
 ]
 
 if RENDER_EXTERNAL_HOSTNAME:
