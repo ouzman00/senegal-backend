@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.pyc
+<<<<<<< HEAD
 .env
 .venv/
 
@@ -30,3 +31,21 @@ node_modules/
 # Windows
 AppData/
 NTUSER.*
+=======
+*.pyo
+*.pyd
+
+# Django
+staticfiles/
+media/
+
+# Environnements
+.env
+.env.*
+*.log
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+>>>>>>> cb34ecf150a0181d6991ffe1e4e154cb4179850a
