@@ -1,63 +1,44 @@
 import os
 from pathlib import Path
+import dj_database_url
 
-# =========================================================
-# BASE
-# =========================================================
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# =========================================================
-# GDAL / GEOS (Windows seulement)
-# =========================================================
+# ---------------------------------------------------------
+# Core
+# ---------------------------------------------------------
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me")
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")  # ex: xxx.onrender.com
+CUSTOM_DOMAIN = os.getenv("CUSTOM_DOMAIN")
+ENV = os.getenv("ENV", "local").lower()
+IS_RENDER = bool(RENDER_EXTERNAL_HOSTNAME)
+IS_PROD = (ENV == "production") or IS_RENDER
+
+# ---------------------------------------------------------
+# GeoDjango (Windows only)
+# ---------------------------------------------------------
 if os.name == "nt":
     os.environ.setdefault("OSGEO4W_ROOT", r"C:\OSGeo4W")
     os.environ.setdefault("GDAL_DATA", r"C:\OSGeo4W\share\gdal")
     os.environ.setdefault("PROJ_LIB", r"C:\OSGeo4W\share\proj")
     os.environ["PATH"] = r"C:\OSGeo4W\bin;" + os.environ.get("PATH", "")
-
     GDAL_LIBRARY_PATH = r"C:\OSGeo4W\bin\gdal308.dll"
     GEOS_LIBRARY_PATH = r"C:\OSGeo4W\bin\geos_c.dll"
 
-# =========================================================
-# SECURITY / ENV
-# =========================================================
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me")
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-
-RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")  # ex: sn221-django-1.onrender.com
-ENV = os.getenv("ENV", "local").lower()  # local | production
-
-IS_RENDER = bool(RENDER_EXTERNAL_HOSTNAME)
-IS_PROD = (ENV == "production") or IS_RENDER
-
-# =========================================================
-# HOSTS
-# =========================================================
+# ---------------------------------------------------------
+# Hosts
+# ---------------------------------------------------------
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0"]
 if IS_RENDER:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-
-CUSTOM_DOMAIN = os.getenv("CUSTOM_DOMAIN")
 if CUSTOM_DOMAIN:
     ALLOWED_HOSTS.append(CUSTOM_DOMAIN)
 
-# =========================================================
-# HTTPS / COOKIES
-# - HTTPS seulement en prod/Render
-# =========================================================
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
-
-if IS_PROD:
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() == "true"
-
-# =========================================================
-# APPS
-# =========================================================
+# ---------------------------------------------------------
+# Apps
+# ---------------------------------------------------------
 INSTALLED_APPS = [
     "corsheaders",
 
@@ -76,9 +57,9 @@ INSTALLED_APPS = [
     "maps",
 ]
 
-# =========================================================
-# MIDDLEWARE (CorsMiddleware doit être avant CommonMiddleware)
-# =========================================================
+# ---------------------------------------------------------
+# Middleware
+# ---------------------------------------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -93,16 +74,13 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# =========================================================
-# URLS / WSGI / ASGI
-# =========================================================
 ROOT_URLCONF = "mybackend.urls"
 WSGI_APPLICATION = "mybackend.wsgi.application"
 ASGI_APPLICATION = "mybackend.asgi.application"
 
-# =========================================================
-# TEMPLATES
-# =========================================================
+# ---------------------------------------------------------
+# Templates
+# ---------------------------------------------------------
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -119,24 +97,16 @@ TEMPLATES = [
     }
 ]
 
-# =========================================================
-# DATABASE (PostGIS)
-# =========================================================
-import dj_database_url
-
+# ---------------------------------------------------------
+# Database (PostGIS)
+# ---------------------------------------------------------
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Sur Render, DATABASE_URL doit exister
-if IS_RENDER and not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is required on Render.")
-
 if DATABASE_URL:
-    DATABASES = {
-        "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
-    }
-    # ✅ OBLIGATOIRE pour GeoDjango
+    DATABASES = {"default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
     DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 else:
+    # local fallback
     DATABASES = {
         "default": {
             "ENGINE": "django.contrib.gis.db.backends.postgis",
@@ -148,84 +118,66 @@ else:
         }
     }
 
-
-# =========================================================
-# STATIC FILES (WhiteNoise)
-# =========================================================
+# ---------------------------------------------------------
+# Static files
+# ---------------------------------------------------------
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
 STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    }
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"}
 }
 
-# =========================================================
-# I18N
-# =========================================================
+# ---------------------------------------------------------
+# I18N / TZ
+# ---------------------------------------------------------
 LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = os.getenv("TIME_ZONE", "UTC")
 USE_I18N = True
 USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# =========================================================
-# CORS + CSRF
-# =========================================================
+# ---------------------------------------------------------
+# Security (default local)
+# ---------------------------------------------------------
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
-# ✅ Simple et robuste :
-# - en local : autoriser tout (évite les galères)
-# - en prod : whitelist stricte
+if IS_PROD:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # Laisse Render gérer la redirection https (souvent mieux)
+    SECURE_SSL_REDIRECT = False
+
+# ---------------------------------------------------------
+# CORS / CSRF
+# ---------------------------------------------------------
 CORS_ALLOW_ALL_ORIGINS = not IS_PROD
+CORS_ALLOW_CREDENTIALS = False
 
-# Si tu veux absolument contrôler par env en local, remplace la ligne ci-dessus par :
-# CORS_ALLOW_ALL_ORIGINS = (not IS_PROD) and (os.getenv("CORS_ALLOW_ALL_ORIGINS", "False").lower() == "true")
+if IS_PROD:
+    # ✅ mets TON domaine Vercel de prod ici (ou via env)
+    FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "").strip()
 
-CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "False").lower() == "true"
+    CORS_ALLOWED_ORIGINS = [FRONTEND_ORIGIN] if FRONTEND_ORIGIN else []
+    CORS_ALLOWED_ORIGIN_REGEXES = [r"^https:\/\/.*\.vercel\.app$"]
 
-if not CORS_ALLOW_ALL_ORIGINS:
-    CORS_ALLOWED_ORIGINS = [
-        "https://frontend-dql2.vercel.app",
-    ]
-    CORS_ALLOWED_ORIGIN_REGEXES = [
-        r"^https:\/\/frontend-dql2-.*\.vercel\.app$",
-    ]
+    CSRF_TRUSTED_ORIGINS = []
+    if FRONTEND_ORIGIN:
+        CSRF_TRUSTED_ORIGINS.append(FRONTEND_ORIGIN)
+    if IS_RENDER:
+        CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+    if CUSTOM_DOMAIN:
+        CSRF_TRUSTED_ORIGINS.append(f"https://{CUSTOM_DOMAIN}")
+else:
+    CSRF_TRUSTED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-]
-CORS_ALLOW_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
-CORS_VARY_HEADER = True
-
-# CSRF : en local (http) + en prod (https)
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://frontend-dql2.vercel.app",
-]
-if IS_RENDER:
-    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
-if CUSTOM_DOMAIN:
-    CSRF_TRUSTED_ORIGINS.append(f"https://{CUSTOM_DOMAIN}")
-
-CSRF_TRUSTED_ORIGIN_REGEXES = [
-    r"^https:\/\/frontend-dql2-.*\.vercel\.app$",
-]
-
-# =========================================================
-# DRF
-# =========================================================
+# ---------------------------------------------------------
+# DRF (GeoJSON pagination)
+# ---------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework_gis.pagination.GeoJsonPagination",
     "PAGE_SIZE": 1000,
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
 }
