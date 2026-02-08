@@ -1,12 +1,8 @@
 from django.contrib import admin
-from .models import Hopital, Ecole
+from .models import Hopital, Ecole, Parcelle, Commerce, Boutique
 
-@admin.register(Hopital)
-class HopitalAdmin(admin.ModelAdmin):
-    list_display = ("id", "nom", "adresse")
-    search_fields = ("nom", "adresse")
-
-@admin.register(Ecole)
-class EcoleAdmin(admin.ModelAdmin):
-    list_display = ("id", "nom", "adresse")
-    search_fields = ("nom", "adresse")
+admin.site.register(Hopital)
+admin.site.register(Ecole)
+admin.site.register(Parcelle)
+admin.site.register(Commerce)
+admin.site.register(Boutique)
