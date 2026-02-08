@@ -36,3 +36,11 @@ class Commerce(models.Model):
     def __str__(self) -> str:
         return self.nom
 
+
+class Boutique(models.Model):
+    nom = models.CharField(max_length=200)
+    adresse = models.CharField(max_length=255, blank=True, null=True)
+    geom = models.PointField(srid=4326, blank=True, null=True)
+
+    def __str__(self) -> str:
+        return self.nom
