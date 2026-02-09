@@ -43,8 +43,8 @@ class BoutiqueSerializer(GeoFeatureModelSerializer):
         geo_field = "geom"
         fields = ("id", "localisation", "catégorie")
 
-    # def get_catégorie(self, obj):
-    #     return "Boutique"
+    def get_catégorie(self, obj):
+        return "Boutique"
 
 
 
