@@ -1,3 +1,4 @@
+from django.contrib.gis.db.models.functions import Transform
 from rest_framework import viewsets
 from rest_framework_gis.pagination import GeoJsonPagination
 
@@ -40,5 +41,7 @@ class BoutiqueViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = StandardGeoPagination
 
 class PointViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Point.objects.exclude(geom__isnull=True)
     serializer_class = PointSerializer
+    queryset = Point.objects.exclude(geom__isnull=True).annotate(
+        geom=Transform("geom", 4326)
+    )
