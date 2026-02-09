@@ -46,8 +46,19 @@ class BoutiqueSerializer(GeoFeatureModelSerializer):
     def get_catégorie(self, obj):
         return "Boutique"
 
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
+from .models import Point
+
 class PointSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Point
-        geo_field = "geom"
+        geo_field = "geom4326"  # ✅ on utilise la géométrie reprojetée
         fields = [f.name for f in Point._meta.fields if f.name != "geom"]
+
+# class PointSerializer(GeoFeatureModelSerializer):
+#     class Meta:
+#         model = Point
+#         geo_field = "geom"
+#         fields = [f.name for f in Point._meta.fields if f.name != "geom"] OLD VERSION ==> NE MARCHE PAS SI ON VEUT TRANSFORMER DIRECTEMENT LE SCR SUR DJANGO
+
+        # ou fields = ("fid", "ref_id")

@@ -42,6 +42,8 @@ class BoutiqueViewSet(viewsets.ReadOnlyModelViewSet):
 
 class PointViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PointSerializer
-    queryset = Point.objects.exclude(geom__isnull=True).annotate(
-        geom=Transform("geom", 4326)
+    queryset = (
+        Point.objects
+        .exclude(geom__isnull=True)
+        .annotate(geom4326=Transform("geom", 4326))
     )
