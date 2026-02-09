@@ -1,6 +1,6 @@
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from rest_framework import serializers
-from .models import Hopital, Ecole, Parcelle, Commerce, Boutique
+from .models import Hopital, Ecole, Parcelle, Commerce, Boutique, Point
 
 
 class HopitalSerializer(GeoFeatureModelSerializer):
@@ -45,3 +45,9 @@ class BoutiqueSerializer(GeoFeatureModelSerializer):
 
     def get_catégorie(self, obj):
         return "Boutique"
+
+class PointSerializer(GeoFeatureModelSerializer):
+    class Meta:
+        model = Point
+        geo_field = "geom"
+        fields = ("id", "nom")
