@@ -1,9 +1,13 @@
-
+# views.py
 from rest_framework import viewsets
 from rest_framework_gis.pagination import GeoJsonPagination
+from django.contrib.gis.db.models.functions import Transform
 
 from .models import Hopital, Ecole, Parcelle, Commerce, Boutique, Point
-from .serializers import HopitalSerializer, EcoleSerializer, ParcelleSerializer, CommerceSerializer, BoutiqueSerializer, PointSerializer
+from .serializers import (
+    HopitalSerializer, EcoleSerializer, ParcelleSerializer,
+    CommerceSerializer, BoutiqueSerializer, PointSerializer
+)
 
 
 class StandardGeoPagination(GeoJsonPagination):
@@ -35,13 +39,20 @@ class CommerceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CommerceSerializer
     pagination_class = StandardGeoPagination
 
+
 class BoutiqueViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Boutique.objects.all()
     serializer_class = BoutiqueSerializer
     pagination_class = StandardGeoPagination
 
 
-# On a la classe avec le scr ici pour directement transformer notre données 2154 en 4326
+#  ✅ LA VERSION LA PLUS SIMPLE POUR TRANSFORMER 2154 -> 4326
 class PointViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Point.objects.exclude(geom__isnull=True)
     serializer_class = PointSerializer
+    pagination_class = StandardGeoPagination
+
+    def get_queryset(self):
+        return (
+            Point.objects.exclude(geom__isnull=True)
+            .annotate(geom_4326=Transform("geom", 4326))
+        )
