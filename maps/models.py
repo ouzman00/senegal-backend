@@ -49,13 +49,18 @@ class Boutique(models.Model):
 # MODELE QUI POINT VERS LA COUCHE CREER
 
 class Point(models.Model):
-    # ⚠️ adapte les noms aux colonnes réelles de maps_point
-    nom = models.CharField(max_length=255, blank=True, null=True)
+    fid = models.BigIntegerField(primary_key=True, db_column="fid")
+
+    # colonne SQL "id" (varchar) -> on évite d'appeler le champ Django "id"
+    ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
+
+    x = models.BigIntegerField(blank=True, null=True)
+    y = models.BigIntegerField(blank=True, null=True)
     geom = models.PointField(srid=4326)
 
     class Meta:
-        db_table = "maps_point"   # 👈 table EXISTANTE
-        managed = False           # 👈 Django ne touche pas la table
+        db_table = "maps_point"
+        managed = False
 
     def __str__(self):
-        return self.nom or "Point"
+        return self.ref_id or f"Point {self.fid}"
