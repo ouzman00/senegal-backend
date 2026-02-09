@@ -54,8 +54,8 @@ class Point(models.Model):
     # colonne SQL "id" (varchar) -> on évite d'appeler le champ Django "id"
     ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
 
-    x = models.BigIntegerField(blank=True, null=True)
-    y = models.BigIntegerField(blank=True, null=True)
+    # x = models.BigIntegerField(blank=True, null=True)
+    # y = models.BigIntegerField(blank=True, null=True)
     geom = models.PointField(srid=4326)
 
     class Meta:
