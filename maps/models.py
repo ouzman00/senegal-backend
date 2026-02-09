@@ -1,4 +1,3 @@
-# models.py
 from django.contrib.gis.db import models
 
 
@@ -45,13 +44,19 @@ class Boutique(models.Model):
 
     def __str__(self) -> str:
         return self.nom
+    
 
+# MODELE QUI POINT VERS LA COUCHE CREER
 
-# MODELE QUI POINTE VERS LA TABLE EXISTANTE
 class Point(models.Model):
     fid = models.BigIntegerField(primary_key=True, db_column="fid")
+
+    # colonne SQL "id" (varchar) -> on évite d'appeler le champ Django "id"
     ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
-    geom = models.PointField()  # ⚠️ on ne force pas ici si la table est en 2154/4326
+
+    # x = models.BigIntegerField(blank=True, null=True)
+    # y = models.BigIntegerField(blank=True, null=True)
+    geom = models.PointField(srid=4326)
 
     class Meta:
         db_table = "maps_point"
