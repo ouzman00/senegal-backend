@@ -20,7 +20,7 @@ if CUSTOM_DOMAIN:
 
 # Fallback (évite 400 "Bad Request" si host inattendu)
 # Tu peux enlever si tu veux strict, mais utile pendant debug
-ALLOWED_HOSTS += ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS += ["localhost", "127.0.0.1", ".onrender.com"]
 
 # =========================================================
 # DRF (JSON only)
