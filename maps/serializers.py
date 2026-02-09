@@ -46,11 +46,29 @@ class BoutiqueSerializer(GeoFeatureModelSerializer):
     def get_catégorie(self, obj):
         return "Boutique"
 
+
+
 class PointSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Point
-        geo_field = "geom4326"  # ✅ IMPORTANT
-        fields = [f.name for f in Point._meta.fields if f.name != "geom"]
+        geo_field = "geom"
+        fields = ("fid", "ref_id")
+
+    def to_representation(self, instance):
+        """
+        Transforme la géométrie de 2154 -> 4326
+        juste avant l'envoi au client
+        """
+        geom = instance.geom
+
+        if geom and geom.srid != 4326:
+            geom = geom.clone()
+            geom.transform(4326)
+
+        # on remplace temporairement la géométrie
+        instance.geom = geom
+
+        return super().to_representation(instance)
 
 # class PointSerializer(GeoFeatureModelSerializer):
 #     class Meta:

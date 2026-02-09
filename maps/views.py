@@ -1,4 +1,4 @@
-from django.contrib.gis.db.models.functions import Transform
+
 from rest_framework import viewsets
 from rest_framework_gis.pagination import GeoJsonPagination
 
@@ -43,7 +43,5 @@ class BoutiqueViewSet(viewsets.ReadOnlyModelViewSet):
 
 # On a la classe avec le scr ici pour directement transformer notre données 2154 en 4326
 class PointViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Point.objects.exclude(geom__isnull=True)
     serializer_class = PointSerializer
-    queryset = Point.objects.exclude(geom__isnull=True).annotate(
-        geom4326=Transform("geom", 4326)
-    )
