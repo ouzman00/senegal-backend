@@ -29,8 +29,10 @@ class CommerceSerializer(GeoFeatureModelSerializer):
         model = Commerce
         geo_field = "geom"
         fields = ("id", "nom", "adresse")
+        
 
-
+# BoutiqueSerializer est différent parce qu’il ne reflète pas directement la table :
+# il transforme volontairement le modèle pour exposer une API plus métier.
 class BoutiqueSerializer(GeoFeatureModelSerializer):
     # "localisation" est un alias de "adresse"
     localisation = serializers.CharField(source="adresse", allow_null=True, required=False)
@@ -66,5 +68,6 @@ class PointSerializer(GeoFeatureModelSerializer):
 #         model = Point
 #         geo_field = "geom"
 #         fields = [f.name for f in Point._meta.fields if f.name != "geom"] OLD VERSION ==> NE MARCHE PAS SI ON VEUT TRANSFORMER DIRECTEMENT LE SCR SUR DJANGO
+# MARCHE SI ON A AJOUTE UNE COUHE A LA BD RENDER ET QU'ON VEUT L'IMPORTER EN PLUS DEJA EN 4326
 
         # ou fields = ("fid", "ref_id")

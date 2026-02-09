@@ -44,4 +44,5 @@ class BoutiqueViewSet(viewsets.ReadOnlyModelViewSet):
 # On a la classe avec le scr ici pour directement transformer notre données 2154 en 4326
 class PointViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Point.objects.exclude(geom__isnull=True)
+    #ne maîtrises pas à 100 % son contenu c'est pour cela on n'a pas objects.all()
     serializer_class = PointSerializer

@@ -56,11 +56,11 @@ class Point(models.Model):
 
     # x = models.BigIntegerField(blank=True, null=True)
     # y = models.BigIntegerField(blank=True, null=True)
-    geom = models.PointField(srid=4326)
+    geom = models.PointField(srid=2154)
 
     class Meta:
         db_table = "maps_point"
         managed = False
-
+#ICI ON METS LE NOM DE LA TABLE A IMPORTER ET MANAGED=FALSE POUR LA TABLE EXTERNE QU'ON MAITRISE PAS
     def __str__(self):
         return self.ref_id or f"Point {self.fid}"
