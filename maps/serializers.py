@@ -35,18 +35,14 @@ class BoutiqueSerializer(GeoFeatureModelSerializer):
     # "localisation" est un alias de "adresse"
     localisation = serializers.CharField(source="adresse", allow_null=True, required=False)
 
-    # "catégorie" n'existe pas en base -> on la calcule (ou valeur fixe)
-    catégorie = serializers.SerializerMethodField()
-
     class Meta:
         model = Boutique
         geo_field = "geom"
         fields = ("id", "localisation", "catégorie")
 
-    def get_catégorie(self, obj):
-        return "Boutique"
 
 
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
 class PointSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -55,20 +51,11 @@ class PointSerializer(GeoFeatureModelSerializer):
         fields = ("fid", "ref_id")
 
     def to_representation(self, instance):
-        """
-        Transforme la géométrie de 2154 -> 4326
-        juste avant l'envoi au client
-        """
-        geom = instance.geom
-
-        if geom and geom.srid != 4326:
-            geom = geom.clone()
-            geom.transform(4326)
-
-        # on remplace temporairement la géométrie
-        instance.geom = geom
-
+        if instance.geom and instance.geom.srid != 4326:
+            instance.geom = instance.geom.clone()
+            instance.geom.transform(4326)
         return super().to_representation(instance)
+
 
 # class PointSerializer(GeoFeatureModelSerializer):
 #     class Meta:
