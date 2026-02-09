@@ -50,5 +50,6 @@ class PointSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Point
         geo_field = "geom"
-        exclude = ("geom",)
+        ields = "__all__"
+        read_only_fields = ("geom",)
         # fields = ("id", "nom")
