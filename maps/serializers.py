@@ -50,4 +50,4 @@ class PointSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Point
         geo_field = "geom"
-        fields = ("id", "nom")
+        fields = ()
