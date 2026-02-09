@@ -40,10 +40,10 @@ class BoutiqueViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = BoutiqueSerializer
     pagination_class = StandardGeoPagination
 
+
+# On a la classe avec le scr ici pour directement transformer notre données 2154 en 4326
 class PointViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PointSerializer
-    queryset = (
-        Point.objects
-        .exclude(geom__isnull=True)
-        .annotate(geom4326=Transform("geom", 4326))
+    queryset = Point.objects.exclude(geom__isnull=True).annotate(
+        geom4326=Transform("geom", 4326)
     )
