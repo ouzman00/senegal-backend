@@ -50,6 +50,5 @@ class PointSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Point
         geo_field = "geom"
-        fields = "__all__"
-        read_only_fields = ("geom",)
+        fields = [f.name for f in Point._meta.fields if f.name != "geom"]
         # fields = ("id", "nom")
