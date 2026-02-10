@@ -27,11 +27,11 @@ class Parcelle(models.Model):
     def __str__(self) -> str:
         return self.nom
 
-# SIMPLE avec self.id ou ou self.pk
+# SIMPLE avec self.id
 class Commerce(models.Model):
     geom = models.MultiPolygonField(srid=4326, blank=True, null=True)
     def __str__(self):
-        return f"Commerce {self.id}" 
+        return f"Commerce {self.pk}" 
     
 
 
