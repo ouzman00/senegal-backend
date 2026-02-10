@@ -23,12 +23,6 @@ class ParcelleSerializer(GeoFeatureModelSerializer):
         geo_field = "geom"
         fields = ("id",)
 
-# SIMPLE
-# class CommerceSerializer(GeoFeatureModelSerializer):
-#     class Meta:
-#         model = Commerce
-#         geo_field = "geom"
-#         fields = ("id",) ou "pk",
 
 class CommerceSerializer(GeoFeatureModelSerializer):
     class Meta:
