@@ -43,7 +43,7 @@ class Point(models.Model):
         managed = False
 #ICI ON METS LE NOM DE LA TABLE A IMPORTER ET MANAGED=FALSE POUR LA TABLE EXTERNE QU'ON MAITRISE PAS
     def __str__(self):
-        return self.ref_id or f"Point {self.fid}"
+        return f"Point {self.pk}"
 
 
 class ZA(models.Model):
