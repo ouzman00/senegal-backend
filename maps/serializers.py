@@ -28,7 +28,7 @@ class ParcelleSerializer(GeoFeatureModelSerializer):
 #     class Meta:
 #         model = Commerce
 #         geo_field = "geom"
-#         fields = ("id",)
+#         fields = ("id",) ou "pk",
 
 class CommerceSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -68,6 +68,24 @@ class PointSerializer(GeoFeatureModelSerializer):
             instance.geom.transform(4326)
         return super().to_representation(instance)
 
+# class ZASerializer(GeoFeatureModelSerializer):
+#     class Meta:
+#         model = ZA
+#         geo_field = "geom"
+#         fields= "__all__"
+#         # fields = ("fid", "ref_id") __all__ pour tous les champs, plus sur
+
+#     def to_representation(self, instance):
+#         if instance.geom and instance.geom.srid != 4326:
+#             instance.geom = instance.geom.clone()
+#             instance.geom.transform(4326)
+#         return super().to_representation(instance)
+    
+class ZASerializer(GeoFeatureModelSerializer):
+    class Meta:
+        model = ZA
+        geo_field = "geom_4326"
+        fields = "__all__"
 
 # class PointSerializer(GeoFeatureModelSerializer):
 #     class Meta:
@@ -113,15 +131,3 @@ class PointSerializer(GeoFeatureModelSerializer):
 #         geo_field = "geom"
 #         fields = ("id", "nom", "adresse")
 
-class ZASerializer(GeoFeatureModelSerializer):
-    class Meta:
-        model = ZA
-        geo_field = "geom"
-        fields= "__all__"
-        # fields = ("fid", "ref_id")
-
-    def to_representation(self, instance):
-        if instance.geom and instance.geom.srid != 4326:
-            instance.geom = instance.geom.clone()
-            instance.geom.transform(4326)
-        return super().to_representation(instance)

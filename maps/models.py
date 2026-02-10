@@ -32,7 +32,7 @@ class Parcelle(models.Model):
 #     geom = models.MultiPolygonField(srid=4326, blank=True, null=True)
 
 #     def __str__(self):
-#         return f"Commerce {self.id}"
+#         return f"Commerce {self.id}" ou self.pk
 
 
 class Commerce(models.Model):
@@ -100,5 +100,4 @@ class ZA(models.Model):
 
 # Quand je parle de geom dans mon code, va chercher la colonne wkb_geometry dans la base de données
 # ca permet d'aller chercher le polygone et de l'afficher si on n'a pas le meme nom que sur la base de données
-
 # geom = models.GeometryField(srid=2154, db_column="geom")
