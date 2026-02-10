@@ -25,7 +25,7 @@ class CommerceSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Commerce
         geo_field = "geom"
-        fields = "__all__"
+        fields = ("pk",)
 
 
 # BoutiqueSerializer est différent parce qu’il ne reflète pas directement la table :
@@ -40,7 +40,7 @@ class BoutiqueSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Boutique
         geo_field = "geom"
-        fields = fields = "__all__"
+        fields = "__all__"
 
     def get_catégorie(self, obj):
         return "Boutique"
@@ -72,7 +72,7 @@ class ZASerializer(GeoFeatureModelSerializer):
 
 
 
-
+# UTILISER "fid", ou pk pour un chargement plus rapide
 
 # EXEMPLE DE TECHNIQUE POUR EVITER LES REPETITIONS
 # TECHNIQUE DE RECONVERSION DES DONNEES EN 4326 QUI SONT EN 2154 SUR MODELE (ma base)
