@@ -63,28 +63,17 @@ class Point(models.Model):
 
 
 class ZA(models.Model):
-    fid = models.BigIntegerField(primary_key=True, db_column="fid")
-    ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
-    geom = models.GeometryField(srid=2154) 
+    pk = models.BigIntegerField(primary_key=True)
+    geom = models.MultiPolygonField(srid=4326)
 
     class Meta:
         db_table = "maps_za"
         managed = False
+
     def __str__(self):
-        return self.ref_id or f"ZA {self.fid}"
-    
+        return f"ZA {self.pk}"
 
 
-# class Commerce(models.Model):
-#     pk = models.BigIntegerField(primary_key=True)
-#     geom = models.MultiPolygonField(srid=4326)
-
-#     class Meta:
-#         db_table = "maps_commerce"
-#         managed = False
-
-#     def __str__(self):
-#         return f"Commerce {self.pk}"
 
 
 
