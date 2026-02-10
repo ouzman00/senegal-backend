@@ -23,6 +23,12 @@ class ParcelleSerializer(GeoFeatureModelSerializer):
         geo_field = "geom"
         fields = ("id", "nom", "adresse")
 
+# SIMPLE
+# class CommerceSerializer(GeoFeatureModelSerializer):
+#     class Meta:
+#         model = Commerce
+#         geo_field = "geom"
+#         fields = ("id",)
 
 class CommerceSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -111,7 +117,8 @@ class ZASerializer(GeoFeatureModelSerializer):
     class Meta:
         model = ZA
         geo_field = "geom"
-        fields = ("fid", "ref_id")
+        exclude = ("geom",)
+        # fields = ("fid", "ref_id")
 
     def to_representation(self, instance):
         if instance.geom and instance.geom.srid != 4326:
