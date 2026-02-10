@@ -117,7 +117,7 @@ class ZASerializer(GeoFeatureModelSerializer):
     class Meta:
         model = ZA
         geo_field = "geom"
-        exclude = ("geom",)
+        fields= "__all__"
         # fields = ("fid", "ref_id")
 
     def to_representation(self, instance):
