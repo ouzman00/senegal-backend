@@ -56,7 +56,7 @@ class Point(models.Model):
 
     # x = models.BigIntegerField(blank=True, null=True)
     # y = models.BigIntegerField(blank=True, null=True)
-    geom = models.PointField(srid=2154)
+    geom = models.GeometryField(srid=2154)
 
     class Meta:
         db_table = "maps_point"
@@ -71,7 +71,7 @@ class ZA(models.Model):
 
     # colonne SQL "id" (varchar) -> on évite d'appeler le champ Django "id"
     ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
-    geom = models.GeometryField(srid=2154, db_column="geom") 
+    geom = models.GeometryField(srid=2154) 
 
     class Meta:
         db_table = "maps_za"
