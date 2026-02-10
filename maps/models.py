@@ -47,7 +47,7 @@ class Point(models.Model):
 
 
 class ZA(models.Model):
-    id = models.BigIntegerField(primary_key=True)
+    # id = models.BigIntegerField(primary_key=True)
     geom = models.MultiPolygonField(srid=4326)
 
     class Meta:
