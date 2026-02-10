@@ -63,7 +63,7 @@ class Point(models.Model):
 
 
 class ZA(models.Model):
-    pk = models.BigIntegerField(primary_key=True)
+    id = models.BigIntegerField(primary_key=True)
     geom = models.MultiPolygonField(srid=4326)
 
     class Meta:
@@ -71,7 +71,7 @@ class ZA(models.Model):
         managed = False
 
     def __str__(self):
-        return f"ZA {self.pk}"
+        return f"ZA {self.id}"
 
 
 
