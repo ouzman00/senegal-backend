@@ -48,6 +48,6 @@ class PointViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PointSerializer
 
 class ZAViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Point.objects.exclude(geom__isnull=True)
+    queryset = ZA.objects.exclude(geom__isnull=True)
     #ne maîtrises pas à 100 % son contenu c'est pour cela on n'a pas objects.all()
     serializer_class = ZASerializer

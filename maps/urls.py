@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from .views import HopitalViewSet, EcoleViewSet, ParcelleViewSet, CommerceViewSet, BoutiqueViewSet, PointViewSet
+from .views import HopitalViewSet, EcoleViewSet, ParcelleViewSet, CommerceViewSet, BoutiqueViewSet, PointViewSet, ZAViewSet
 
 router = DefaultRouter()
 router.register("hopitaux", HopitalViewSet, basename="hopitaux")
@@ -8,6 +8,6 @@ router.register("parcelles", ParcelleViewSet, basename="parcelles")
 router.register("commerces", CommerceViewSet, basename="commerces")
 router.register("boutique", BoutiqueViewSet, basename="boutique")
 router.register("points", PointViewSet, basename="points")
-router.register("za", PointViewSet, basename="za")
+router.register("za", ZAViewSet, basename="za")
 
 urlpatterns = router.urls
