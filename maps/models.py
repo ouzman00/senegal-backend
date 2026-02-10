@@ -36,7 +36,7 @@ class Point(models.Model):
     # ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
 
     # On pourrait mettre geom = models.GeometryField(srid=2154) s'il s'agit que des points mais Geometryfield pour toutes les géométries (P, L, P)
-    geom = models.GeometryField(srid=2154)
+    geom = models.PointField(srid=2154)
 
     class Meta:
         db_table = "maps_point"
