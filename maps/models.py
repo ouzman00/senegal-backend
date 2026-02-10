@@ -34,7 +34,7 @@ class Boutique(models.Model):
 class Point(models.Model):
 
     # On pourrait mettre geom = models.GeometryField(srid=2154) s'il s'agit que des points mais Geometryfield pour toutes les géométries (P, L, P)
-    geom = models.GeometryField(srid=4326)
+    geom = models.PointField(srid=2154)
 
     class Meta:
         db_table = "maps_point"
@@ -45,7 +45,7 @@ class Point(models.Model):
 
 
 class ZA(models.Model):
-    geom = models.GeometryField(srid=4326)
+    geom = models.GeometryField(srid=2154)
 
     class Meta:
         db_table = "maps_za"
