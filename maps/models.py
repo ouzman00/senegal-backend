@@ -32,28 +32,20 @@ class Boutique(models.Model):
 # MODELE QUI POINT VERS LA COUCHE CREER EN 2154
 
 class Point(models.Model):
-    fid = models.BigIntegerField(primary_key=True, db_column="fid")
-    ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
-
-    # On pourrait mettre geom = models.GeometryField(srid=2154) s'il s'agit que des points mais Geometryfield pour toutes les géométries (P, L, P)
+    fid = models.BigIntegerField(primary_key=True)
     geom = models.GeometryField(srid=2154)
-
     class Meta:
         db_table = "maps_point"
         managed = False
-#ICI ON METS LE NOM DE LA TABLE A IMPORTER ET MANAGED=FALSE POUR LA TABLE EXTERNE QU'ON MAITRISE PAS
     def __str__(self):
         return f"Point {self.fid}"
 
 
 class ZA(models.Model):
-    # id = models.BigIntegerField(primary_key=True)
     geom = models.MultiPolygonField(srid=2154)
-
     class Meta:
         db_table = "maps_za"
         managed = False
-
     def __str__(self):
         return f"ZA {self.pk}"
 
