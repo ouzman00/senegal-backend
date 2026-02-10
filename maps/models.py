@@ -74,7 +74,7 @@ class ZA(models.Model):
 
     # x = models.BigIntegerField(blank=True, null=True)
     # y = models.BigIntegerField(blank=True, null=True)
-    geom = models.CharField(srid=2154)
+    geom = models.CharField()
 
     class Meta:
         db_table = "maps_za"
