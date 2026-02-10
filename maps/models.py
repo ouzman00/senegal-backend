@@ -71,10 +71,7 @@ class ZA(models.Model):
 
     # colonne SQL "id" (varchar) -> on évite d'appeler le champ Django "id"
     ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
-
-    # x = models.BigIntegerField(blank=True, null=True)
-    # y = models.BigIntegerField(blank=True, null=True)
-    geom = models.CharField()
+    geom = models.GeometryField(srid=2154, db_column="geom") 
 
     class Meta:
         db_table = "maps_za"
