@@ -21,7 +21,7 @@ class ParcelleSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Parcelle
         geo_field = "geom"
-        fields = ("id", "nom", "adresse")
+        fields = ("id",)
 
 # SIMPLE
 # class CommerceSerializer(GeoFeatureModelSerializer):
@@ -34,7 +34,7 @@ class CommerceSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Commerce
         geo_field = "geom"
-        fields = ("id", "nom", "adresse")
+        fields = ("__all__")
 
 
 # BoutiqueSerializer est différent parce qu’il ne reflète pas directement la table :
@@ -95,7 +95,7 @@ class ZASerializer(GeoFeatureModelSerializer):
 
 
 
-
+# EXEMPLE DE TECHNIQUE POUR EVITER LES REPETITIONS
 # TECHNIQUE DE RECONVERSION DES DONNEES EN 4326 QUI SONT EN 2154 SUR MODELE (ma base)
 
 # from rest_framework_gis.serializers import GeoFeatureModelSerializer
@@ -112,13 +112,13 @@ class ZASerializer(GeoFeatureModelSerializer):
 #     class Meta:
 #         model = Hopital
 #         geo_field = "geom"
-#         fields = ("id", "nom", "adresse")
+#         fields = ("__all__")
 
 # class EcoleSerializer(Reproject2154To4326GeoSerializer):
 #     class Meta:
 #         model = Ecole
 #         geo_field = "geom"
-#         fields = ("id", "nom", "adresse")
+#         fields = ("pk")
 
 # class ParcelleSerializer(Reproject2154To4326GeoSerializer):
 #     class Meta:

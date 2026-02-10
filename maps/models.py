@@ -30,7 +30,6 @@ class Parcelle(models.Model):
 # SIMPLE
 # class Commerce(models.Model):
 #     geom = models.MultiPolygonField(srid=4326, blank=True, null=True)
-
 #     def __str__(self):
 #         return f"Commerce {self.id}" ou self.pk
 
@@ -57,12 +56,8 @@ class Boutique(models.Model):
 
 class Point(models.Model):
     fid = models.BigIntegerField(primary_key=True, db_column="fid")
-
-    # colonne SQL "id" (varchar) -> on évite d'appeler le champ Django "id"
     ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
 
-    # x = models.BigIntegerField(blank=True, null=True)
-    # y = models.BigIntegerField(blank=True, null=True)
     # On pourrait mettre geom = models.GeometryField(srid=2154) s'il s'agit que des points mais Geometryfield pour toutes les géométries (P, L, P)
     geom = models.GeometryField(srid=2154)
 
@@ -76,21 +71,32 @@ class Point(models.Model):
 
 class ZA(models.Model):
     fid = models.BigIntegerField(primary_key=True, db_column="fid")
-
-    # colonne SQL "id" (varchar) -> on évite d'appeler le champ Django "id"
     ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
     geom = models.GeometryField(srid=2154) 
 
     class Meta:
         db_table = "maps_za"
         managed = False
-#ICI ON METS LE NOM DE LA TABLE A IMPORTER ET MANAGED=FALSE POUR LA TABLE EXTERNE QU'ON MAITRISE PAS
     def __str__(self):
         return self.ref_id or f"ZA {self.fid}"
     
 
 
+# class Commerce(models.Model):
+#     pk = models.BigIntegerField(primary_key=True)
+#     geom = models.MultiPolygonField(srid=4326)
 
+#     class Meta:
+#         db_table = "maps_commerce"
+#         managed = False
+
+#     def __str__(self):
+#         return f"Commerce {self.pk}"
+
+
+
+
+# POUR GEOM
 # PointField ==> Points uniquement
 # LineStringField	==> Lignes uniquement
 # PolygonField	==> Polygones uniquement
