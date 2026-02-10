@@ -46,7 +46,7 @@ class Boutique(models.Model):
         return self.nom
     
 
-# MODELE QUI POINT VERS LA COUCHE CREER
+# MODELE QUI POINT VERS LA COUCHE CREER EN 2154
 
 class Point(models.Model):
     fid = models.BigIntegerField(primary_key=True, db_column="fid")
@@ -64,3 +64,21 @@ class Point(models.Model):
 #ICI ON METS LE NOM DE LA TABLE A IMPORTER ET MANAGED=FALSE POUR LA TABLE EXTERNE QU'ON MAITRISE PAS
     def __str__(self):
         return self.ref_id or f"Point {self.fid}"
+
+
+class ZA(models.Model):
+    fid = models.BigIntegerField(primary_key=True, db_column="fid")
+
+    # colonne SQL "id" (varchar) -> on évite d'appeler le champ Django "id"
+    ref_id = models.CharField(max_length=255, blank=True, null=True, db_column="id")
+
+    # x = models.BigIntegerField(blank=True, null=True)
+    # y = models.BigIntegerField(blank=True, null=True)
+    geom = models.PointField(srid=2154)
+
+    class Meta:
+        db_table = "maps_za"
+        managed = False
+#ICI ON METS LE NOM DE LA TABLE A IMPORTER ET MANAGED=FALSE POUR LA TABLE EXTERNE QU'ON MAITRISE PAS
+    def __str__(self):
+        return self.ref_id or f"ZA {self.fid}"

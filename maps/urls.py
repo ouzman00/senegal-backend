@@ -8,5 +8,6 @@ router.register("parcelles", ParcelleViewSet, basename="parcelles")
 router.register("commerces", CommerceViewSet, basename="commerces")
 router.register("boutique", BoutiqueViewSet, basename="boutique")
 router.register("points", PointViewSet, basename="points")
+router.register("za", PointViewSet, basename="za")
 
 urlpatterns = router.urls
