@@ -32,8 +32,6 @@ class Boutique(models.Model):
 # MODELE QUI POINT VERS LA COUCHE CREER EN 2154
 
 class Point(models.Model):
-    id = models.BigIntegerField(primary_key=True)
-    geom = models.MultiPolygonField(srid=4326)
 
     # On pourrait mettre geom = models.GeometryField(srid=2154) s'il s'agit que des points mais Geometryfield pour toutes les géométries (P, L, P)
     geom = models.GeometryField(srid=2154)
@@ -47,8 +45,7 @@ class Point(models.Model):
 
 
 class ZA(models.Model):
-    id = models.BigIntegerField(primary_key=True)
-    geom = models.MultiPolygonField(srid=4326)
+    geom = models.GeometryField(srid=4326)
 
     class Meta:
         db_table = "maps_za"
