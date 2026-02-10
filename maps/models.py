@@ -31,7 +31,7 @@ class Parcelle(models.Model):
 class Commerce(models.Model):
     geom = models.MultiPolygonField(srid=4326, blank=True, null=True)
     def __str__(self):
-        return f"Commerce {self.pk}" 
+        return f"Commerce {self}" 
     
 
 
