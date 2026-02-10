@@ -7,28 +7,25 @@ class HopitalSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Hopital
         geo_field = "geom"
-        fields = ("id", "nom", "adresse")
-
+        fields = "__all__"
 
 class EcoleSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Ecole
         geo_field = "geom"
-        fields = ("id", "nom", "adresse")
-
+        fields = "__all__"
 
 class ParcelleSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Parcelle
         geo_field = "geom"
-        fields = ("id",)
-
+        fields = "__all__"
 
 class CommerceSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Commerce
         geo_field = "geom"
-        fields = ("__all__")
+        fields = "__all__"
 
 
 # BoutiqueSerializer est différent parce qu’il ne reflète pas directement la table :
@@ -43,18 +40,17 @@ class BoutiqueSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Boutique
         geo_field = "geom"
-        fields = ("id", "localisation", "catégorie")
+        fields = fields = "__all__"
 
     def get_catégorie(self, obj):
         return "Boutique"
-
 
 
 class PointSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Point
         geo_field = "geom"
-        fields = ("fid", "ref_id")
+        fields = "__all__"
 
     def to_representation(self, instance):
         if instance.geom and instance.geom.srid != 4326:
@@ -67,23 +63,12 @@ class ZASerializer(GeoFeatureModelSerializer):
         model = ZA
         geo_field = "geom"
         fields= "__all__"
-        # fields = ("fid", "ref_id") __all__ pour tous les champs, plus sur
-
+        # fields = ("fid", "ref_id") __all__ ou les noms des colonnes pour tous les champs, plus sur
     def to_representation(self, instance):
         if instance.geom and instance.geom.srid != 4326:
             instance.geom = instance.geom.clone()
             instance.geom.transform(4326)
         return super().to_representation(instance)
-    
-
-# class PointSerializer(GeoFeatureModelSerializer):
-#     class Meta:
-#         model = Point
-#         geo_field = "geom"
-#         fields = [f.name for f in Point._meta.fields if f.name != "geom"] OLD VERSION ==> NE MARCHE PAS SI ON VEUT TRANSFORMER DIRECTEMENT LE SCR SUR DJANGO
-# MARCHE SI ON A AJOUTE UNE COUHE A LA BD RENDER ET QU'ON VEUT L'IMPORTER EN PLUS DEJA EN 4326
-
-        # ou fields = ("fid", "ref_id")
 
 
 
