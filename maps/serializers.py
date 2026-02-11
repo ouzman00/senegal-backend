@@ -1,5 +1,4 @@
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from rest_framework import serializers
 from .models import Hopital, Ecole, Parcelle, Commerce, Point, ZA, ZAER
 
 # on pourrait mettre ("pk",) ou ("id",) pour charger jouer un peu sur la rapidité
