@@ -21,12 +21,6 @@ class Commerce(models.Model):
     geom = models.MultiPolygonField(srid=4326, blank=True, null=True)
     def __str__(self):
         return f"Commerce {self.pk}" 
-
-class Boutique(models.Model):
-    geom = models.PointField(srid=4326, blank=True, null=True)
-
-    def __str__(self) -> str:
-        return f"Boutique {self.pk}" 
     
 
 # MODELE QUI POINT VERS LA COUCHE CREER EN 2154
@@ -40,7 +34,7 @@ class Point(models.Model):
     def __str__(self):
         return f"Point {self.fid}"
 
-
+# PLUS SUR
 class ZA(models.Model):
     geom = models.MultiPolygonField(srid=2154)
     class Meta:
@@ -49,7 +43,13 @@ class ZA(models.Model):
     def __str__(self):
         return f"ZA {self.pk}"
 
-
+class ZAER(models.Model):
+    geom = models.MultiPolygonField(srid=2154)
+    class Meta:
+        db_table = "maps_zaer"
+        managed = False
+    def __str__(self):
+        return f"ZAER {self.pk}"
 
 
 

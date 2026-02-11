@@ -2,8 +2,8 @@
 from rest_framework import viewsets
 from rest_framework_gis.pagination import GeoJsonPagination
 
-from .models import Hopital, Ecole, Parcelle, Commerce, Boutique, Point, ZA
-from .serializers import HopitalSerializer, EcoleSerializer, ParcelleSerializer, CommerceSerializer, BoutiqueSerializer, PointSerializer, ZASerializer
+from .models import Hopital, Ecole, Parcelle, Commerce, Point, ZA, ZAER
+from .serializers import HopitalSerializer, EcoleSerializer, ParcelleSerializer, CommerceSerializer, PointSerializer, ZASerializer, ZAERSerializer
 
 
 class StandardGeoPagination(GeoJsonPagination):
@@ -35,11 +35,6 @@ class CommerceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CommerceSerializer
     pagination_class = StandardGeoPagination
 
-class BoutiqueViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Boutique.objects.all()
-    serializer_class = BoutiqueSerializer
-    pagination_class = StandardGeoPagination
-
 
 # On a la classe avec le scr ici pour directement transformer notre données 2154 en 4326
 class PointViewSet(viewsets.ReadOnlyModelViewSet):
@@ -51,3 +46,8 @@ class ZAViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ZA.objects.exclude(geom__isnull=True)
     #ne maîtrises pas à 100 % son contenu c'est pour cela on n'a pas objects.all()
     serializer_class = ZASerializer
+
+class ZAERViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = ZAER.objects.exclude(geom__isnull=True)
+    #ne maîtrises pas à 100 % son contenu c'est pour cela on n'a pas objects.all()
+    serializer_class = ZAERSerializer
